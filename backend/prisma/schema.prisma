@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum Rol {
+  JUGADOR
+  ADMIN
+}
+
+enum TipoMovimiento {
+  DEPOSITO
+  RETIRO
+  APUESTA
+  PREMIO
+}
+
+enum EstadoPartida {
+  ACTIVA
+  GANADA
+  PERDIDA
+  EMPATE
+  RENDIDA
+}
+
+enum Riesgo {
+  PEQUENO
+  MEDIANO
+  GRANDE
+}
+
+// ─────────────────────────── Modelos ───────────────────────────
+
+model User {
+  id           String           @id @default(uuid()) // INTERNAL - nunca se expone al cliente
+  publicId     String           @unique // Argon2id(internalId) - único expuesto (anti-IDOR)
+  email        String           @unique
+  passwordHash String // bcrypt costo 12
+  nombre       String
+  rol          Rol              @default(JUGADOR)
+  wallet       Wallet?
+  movimientos  Movimiento[]
+  partidas     PartidaBlackjack[]
+  rondasPlinko RondaPlinko[]
+  refreshTokens RefreshToken[]
+  createdAt    DateTime         @default(now())
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  saldo     Decimal  @default(0) @db.Decimal(12,2)
+  bono      Decimal  @default(0) @db.Decimal(12,2)
+  updatedAt DateTime @updatedAt
+}
+
+// LEDGER inmutable - fuente única de verdad del dinero.
+// Nunca se muta un saldo sin crear su fila aquí (dentro de la misma $transaction).
+model Movimiento {
+  id           String           @id @default(uuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tipo         TipoMovimiento
+  monto        Decimal          @db.Decimal(12,2) // siempre positivo
+  saldoAntes   Decimal          @db.Decimal(12,2)
+  saldoDespues Decimal          @db.Decimal(12,2)
+  juego        String? // "plinko" | "blackjack" | null
+  descripcion  String
+  createdAt    DateTime         @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model PartidaBlackjack {
+  id         String        @id @default(uuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apuesta    Decimal       @db.Decimal(12,2)
+  estado     EstadoPartida @default(ACTIVA)
+  baraja     Json // shoe de 6 mazos restante [cartas...]
+  dealer     Json // { cartas: [...] }
+  manos      Json // [{ cartas, apuesta, estado, doblada, dividida, ganancia }]
+  resultado  Json? // { dealer: {cartas, total}, manos: [...] } al cerrar
+  createdAt  DateTime      @default(now())
+  finishedAt DateTime?
+
+  @@index([userId, estado])
+}
+
+model RondaPlinko {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apuesta       Decimal  @db.Decimal(12,2)
+  riesgo        Riesgo
+  multiplicador Decimal  @db.Decimal(10,2)
+  ganancia      Decimal  @db.Decimal(12,2)
+  seed          String // semilla hex de 32 bytes (auditoría del RNG)
+  rutaBola      Json // trayectoria ["I","D",...] derivada de la seed
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String // sha256 del refresh token opaco
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+}

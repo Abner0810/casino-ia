@@ -1,0 +1,45 @@
+# CI: corre en cada push a dev/qa y en PRs hacia main.
+# Los deploys a producción NUNCA pasan sin estos tests verdes.
+name: CI Tests
+
+on:
+  push:
+    branches: [dev, qa]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Variables dummy para que la app valide el env y los tests corran;
+      # no se contactea ninguna DB real en CI.
+      DATABASE_URL: postgresql://user:pass@localhost:5432/ci_dummy
+      DIRECT_URL: postgresql://user:pass@localhost:5432/ci_dummy
+      JWT_ACCESS_SECRET: ci-access-secret-de-pruebas-1234567890-abcdef
+      JWT_REFRESH_SECRET: ci-refresh-secret-de-pruebas-1234567890-abcdef
+      CORS_ORIGINS: "*"
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Generar cliente de Prisma
+        run: npx prisma generate
+
+      - name: Tests de lógica (Plinko + Blackjack)
+        run: npm run test:logic
+
+      - name: Smoke test de la API
+        run: node tests/smoke.http.mjs

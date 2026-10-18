@@ -1,0 +1,18 @@
+import { z } from 'zod';
+
+export const registerDTO = z.object({
+  email: z.string().trim().email('Email inválido').max(150),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+  nombre: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(80),
+});
+
+export const loginDTO = z.object({
+  email: z.string().trim().email('Email inválido'),
+  password: z.string().min(1, 'La contraseña es obligatoria'),
+});
+
+export const refreshDTO = z.object({
+  refreshToken: z.string().min(20, 'Refresh token inválido'),
+});
+
+export const logoutDTO = refreshDTO;
