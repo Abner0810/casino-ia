@@ -9,12 +9,15 @@ export const partidaActiva = (tx, id, userId) =>
   });
 
 export const guardarPartida = (tx, id, data) =>
-  tx.partidaBlackjack.update({ where: { id }, data });
+  tx.partidaBlackjack.update({ where: { id }, data: { ...data, version: { increment: 1 } } });
+
+export const buscarPropia = (tx, userId, id) => tx.partidaBlackjack.findFirst({ where: { id, userId } });
+export const buscarActiva = (tx, userId) => tx.partidaBlackjack.findFirst({ where: { userId, estado: 'ACTIVA' } });
 
 export const partidasDeUsuario = (userId, limite = 10) =>
   prisma.partidaBlackjack.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limite,
     select: {
       id: true,

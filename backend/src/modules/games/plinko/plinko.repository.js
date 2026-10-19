@@ -7,6 +7,6 @@ export const crearRonda = (tx, data) => tx.rondaPlinko.create({ data });
 export const rondasDeUsuario = (userId, limite = 10) =>
   prisma.rondaPlinko.findMany({
     where: { userId },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     take: limite,
   });

@@ -8,7 +8,7 @@ export const getWallet = (userId) =>
 
 // Balance consolidado: totales del ledger por tipo de movimiento
 export const getBalanceConsolidado = async (userId) => {
-  const [wallet, apostado, ganado, depositos, retiros] = await Promise.all([
+  const [wallet, apostado, ganado, depositos, retiros] = await prisma.$transaction([
     prisma.wallet.findUnique({ where: { userId }, select: { saldo: true, bono: true } }),
     prisma.movimiento.aggregate({
       where: { userId, tipo: 'APUESTA' },
@@ -30,6 +30,6 @@ export const getBalanceConsolidado = async (userId) => {
       _sum: { monto: true },
       _count: true,
     }),
-  ]);
+  ], { isolationLevel: 'RepeatableRead' });
   return { wallet, apostado, ganado, depositos, retiros };
 };
