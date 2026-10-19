@@ -1,0 +1,14 @@
+.cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-7) var(--sp-4);
+  min-height: 240px;
+  color: var(--color-text-muted);
+}
+
+.mensaje {
+  font-size: var(--text-sm);
+}

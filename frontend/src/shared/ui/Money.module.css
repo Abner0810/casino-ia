@@ -1,0 +1,12 @@
+.monto {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.positivo {
+  color: var(--color-success);
+}
+
+.negativo {
+  color: var(--color-danger);
+}
