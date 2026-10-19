@@ -1,0 +1,11 @@
+# Combinar explícitamente con docker-compose.yml; no afecta la imagen publicada.
+services:
+  api:
+    build:
+      target: development
+    environment:
+      NODE_ENV: development
+    command: ["node", "--watch", "src/server.js"]
+    volumes:
+      - ./src:/app/src:ro
+    read_only: false

@@ -25,5 +25,5 @@ export const refresh = manejar(async (req, res) => {
 });
 
 export const logout = manejar(async (req, res) => {
-  res.json(await service.logout(req.body.refreshToken));
+  res.json(await service.logout(req.body.refreshToken, req.user.id));
 });

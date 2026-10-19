@@ -1,0 +1,26 @@
+name: casino-backend-tests
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: casino_test
+      POSTGRES_PASSWORD: casino_test
+      POSTGRES_DB: casino_test
+    ports:
+      - "127.0.0.1:55439:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U casino_test -d casino_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  tests:
+    profiles: [runner]
+    build:
+      context: .
+      target: development
+    environment:
+      INTEGRATION_DATABASE_URL: postgresql://casino_test:casino_test@postgres:5432/casino_test
+    command: ["npm", "run", "verify"]
+    depends_on:
+      postgres:
+        condition: service_healthy
