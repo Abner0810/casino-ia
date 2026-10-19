@@ -1,5 +1,5 @@
 import { ApiError } from '../../shared/ApiError.js';
-import { toNumber } from '../../shared/utils/money.js';
+import { toDecimal, toNumber } from '../../shared/utils/money.js';
 import * as repo from './wallet.repository.js';
 
 export async function verSaldo(userId) {
@@ -19,8 +19,8 @@ export async function verBalance(userId) {
 
   const saldo = wallet.saldo;
   const bono = wallet.bono;
-  const totalApostado = apostado._sum.monto ?? 0;
-  const totalGanado = ganado._sum.monto ?? 0;
+  const totalApostado = toDecimal(apostado._sum.monto ?? 0);
+  const totalGanado = toDecimal(ganado._sum.monto ?? 0);
 
   return {
     saldo: toNumber(saldo),

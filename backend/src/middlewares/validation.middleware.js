@@ -43,7 +43,7 @@ export const validateParams = (schema) => (req, res, next) => {
 export const validateQuery = (schema) => (req, res, next) => {
   try {
     ejecutar(schema, req.query, (r, v) => {
-      r.query = v;
+      Object.defineProperty(r, 'query', { value: v, writable: true, configurable: true, enumerable: true });
     }, req);
     next();
   } catch (error) {

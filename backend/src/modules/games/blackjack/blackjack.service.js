@@ -12,7 +12,7 @@
 //    y quedan plantados (regla estándar de Vegas).
 //  - Double ("subir la apuesta"): solo con 2 cartas iniciales, descuenta
 //    la apuesta extra, recibe 1 carta y planta.
-//  - Exit (rendición): devuelve el 50% de la apuesta total.
+//  - Exit (rendición): devuelve el 50% de las apuestas de manos activas.
 //
 // Atomicidad: cada acción es UNA $transaction — dinero (ledger) y estado
 // de la partida se confirman juntos o revierten juntos. Toda mutación de
@@ -151,9 +151,18 @@ function validarLimites(apuesta) {
 
 const estadoDe = (partida) => {
   try {
-    return typeof partida.manos === 'string' ? JSON.parse(partida.manos) : partida.manos;
+    const parse = (value) => typeof value === 'string' ? JSON.parse(value) : value;
+    const state = {
+      manos: parse(partida.manos),
+      dealer: parse(partida.dealer),
+      baraja: parse(partida.baraja),
+    };
+    if (!Array.isArray(state.manos) || !Array.isArray(state.baraja) || !Array.isArray(state.dealer?.cartas)) {
+      throw new Error('Invalid persisted game state');
+    }
+    return state;
   } catch {
-    return null;
+    throw new ApiError(409, 'El estado de la partida no es válido');
   }
 };
 
@@ -164,7 +173,7 @@ export async function iniciar(userId, { apuesta }) {
   const montoApuesta = dosDecimales(toDecimal(apuesta));
 
   return prisma.$transaction(async (tx) => {
-    const saldoFinal = await debitar(
+    let saldoFinal = await debitar(
       tx,
       userId,
       montoApuesta,
@@ -199,11 +208,11 @@ export async function iniciar(userId, { apuesta }) {
       if (mano.estado === 'GANADA') {
         const premio = dosDecimales(toDecimal(mano.apuesta).times(REGLAS.PAGO_BLACKJACK_NATURAL));
         mano.ganancia = toNumber(premio);
-        await acreditar(tx, userId, premio, 'blackjack', '¡Blackjack natural! Pago 3:2');
+        saldoFinal = await acreditar(tx, userId, premio, 'blackjack', '¡Blackjack natural! Pago 3:2');
       } else if (mano.estado === 'EMPATE') {
         const devolucion = dosDecimales(toDecimal(mano.apuesta));
         mano.ganancia = toNumber(devolucion);
-        await acreditar(tx, userId, devolucion, 'blackjack', 'Empate con blackjack del crupier: devolución');
+        saldoFinal = await acreditar(tx, userId, devolucion, 'blackjack', 'Empate con blackjack del crupier: devolución');
       }
       const estadoFinal = mano.estado; // GANADA | EMPATE | PERDIDA
       await repo.guardarPartida(tx, partida.id, {
@@ -316,8 +325,8 @@ export async function dividir(userId, partidaId) {
     const state = estadoDe(partida);
     const mano = state.manos.find((m) => m.estado === 'ACTIVA');
     if (!mano) throw new ApiError(400, 'No hay una mano activa en esta partida');
-    if (mano.cartas.length !== 2 || mano.doblada || mano.dividida) {
-      throw new ApiError(400, 'Solo puedes dividir tu primera mano con exactamente 2 cartas');
+    if (mano.cartas.length !== 2 || mano.doblada) {
+      throw new ApiError(400, 'Solo puedes dividir una mano con exactamente 2 cartas');
     }
     if (state.manos.length >= REGLAS.MAX_MANOS_POR_SPLIT) {
       throw new ApiError(400, `Máximo ${REGLAS.MAX_MANOS_POR_SPLIT} manos por partida`);
@@ -371,30 +380,39 @@ export async function dividir(userId, partidaId) {
   });
 }
 
-// "Salir" de la mesa = rendición: recupera el 50% de la apuesta total
+// "Salir" de la mesa = rendición: recupera el 50% de las manos activas
 export async function salir(userId, partidaId) {
   return prisma.$transaction(async (tx) => {
     const partida = await repo.partidaActiva(tx, partidaId, userId);
     if (!partida) throw new ApiError(404, 'Partida no encontrada o ya finalizada');
 
     const state = estadoDe(partida);
-    const apuestaTotal = state.manos.reduce((acc, m) => acc.plus(toDecimal(m.apuesta)), toDecimal(0));
-    const devolucion = dosDecimales(apuestaTotal.times(REGLAS.RENDICION));
+    const manosActivas = state.manos.filter((m) => m.estado === 'ACTIVA');
+    if (!manosActivas.length) throw new ApiError(400, 'No hay una mano activa en esta partida');
+    const apuestaTotal = manosActivas.reduce((acc, m) => acc.plus(toDecimal(m.apuesta)), toDecimal(0));
+    const devolucion = manosActivas.reduce(
+      (total, mano) => total.plus(dosDecimales(toDecimal(mano.apuesta).times(REGLAS.RENDICION))),
+      toDecimal(0)
+    );
 
     for (const mano of state.manos) {
       if (mano.estado === 'ACTIVA') {
         mano.estado = 'RENDIDA';
-        mano.ganancia = 0;
+        mano.ganancia = toNumber(dosDecimales(toDecimal(mano.apuesta).times(REGLAS.RENDICION)));
       }
     }
 
-    const saldoFinal = await acreditar(
+    await acreditar(
       tx,
       userId,
       devolucion,
       'blackjack',
       `Rendición Blackjack: devolución del 50% de ${toNumber(apuestaTotal)}`
     );
+
+    // Liquida las manos plantadas; las perdidas no reciben devolución por rendición.
+    await cerrarPartida(tx, partida, state);
+    const wallet = await tx.wallet.findUniqueOrThrow({ where: { userId } });
 
     await repo.guardarPartida(tx, partida.id, {
       estado: 'RENDIDA',
@@ -406,9 +424,9 @@ export async function salir(userId, partidaId) {
     });
 
     return {
-      ...resumen(state, { ...partida, estado: 'RENDIDA' }, false),
+      ...resumen(state, { ...partida, estado: 'RENDIDA' }, true),
       devuelto: toNumber(devolucion),
-      saldoActual: toNumber(saldoFinal),
+      saldoActual: toNumber(wallet.saldo),
       mensaje: 'Te retiraste de la mesa: se devolvió el 50% de la apuesta',
     };
   });

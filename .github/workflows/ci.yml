@@ -1,45 +1,51 @@
-# CI: corre en cada push a dev/qa y en PRs hacia main.
-# Los deploys a producción NUNCA pasan sin estos tests verdes.
-name: CI Tests
-
+name: Backend checks
 on:
   push:
-    branches: [dev, qa]
+    branches: [main, dev, qa, frontmedias]
   pull_request:
     branches: [main]
-
+  workflow_call:
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: casino_test
+          POSTGRES_PASSWORD: casino_test
+          POSTGRES_DB: casino_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U casino_test -d casino_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
     defaults:
       run:
         working-directory: backend
     env:
-      # Variables dummy para que la app valide el env y los tests corran;
-      # no se contactea ninguna DB real en CI.
-      DATABASE_URL: postgresql://user:pass@localhost:5432/ci_dummy
-      DIRECT_URL: postgresql://user:pass@localhost:5432/ci_dummy
+      TEST_DATABASE_URL: postgresql://casino_test:casino_test@localhost:5432/casino_test
+      DATABASE_URL: postgresql://casino_test:casino_test@localhost:5432/casino_test
+      DIRECT_URL: postgresql://casino_test:casino_test@localhost:5432/casino_test
       JWT_ACCESS_SECRET: ci-access-secret-de-pruebas-1234567890-abcdef
       JWT_REFRESH_SECRET: ci-refresh-secret-de-pruebas-1234567890-abcdef
-      CORS_ORIGINS: "*"
+      CORS_ORIGINS: http://localhost:3001
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
-
-      - name: Instalar dependencias
-        run: npm ci
-
-      - name: Generar cliente de Prisma
-        run: npx prisma generate
-
-      - name: Tests de lógica (Plinko + Blackjack)
-        run: npm run test:logic
-
-      - name: Smoke test de la API
-        run: node tests/smoke.http.mjs
+      - run: npm ci
+      - run: npm run build
+      - run: npm run check
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Migrate isolated test database
+        run: npm run migrate:deploy
+      - name: E2E tests against PostgreSQL
+        run: npm run test:e2e

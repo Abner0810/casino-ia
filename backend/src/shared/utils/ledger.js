@@ -41,7 +41,6 @@ export async function debitar(tx, userId, monto, juego, descripcion, tipo = 'APU
  */
 export async function acreditar(tx, userId, monto, juego, descripcion, tipo = 'PREMIO') {
   const montoDec = toDecimal(monto);
-  const antes = await tx.wallet.findUniqueOrThrow({ where: { userId } });
   const despues = await tx.wallet.update({
     where: { userId },
     data: { saldo: { increment: montoDec } },
@@ -51,7 +50,7 @@ export async function acreditar(tx, userId, monto, juego, descripcion, tipo = 'P
       userId,
       tipo,
       monto: montoDec,
-      saldoAntes: antes.saldo,
+      saldoAntes: despues.saldo.sub(montoDec),
       saldoDespues: despues.saldo,
       juego: juego ?? null,
       descripcion,

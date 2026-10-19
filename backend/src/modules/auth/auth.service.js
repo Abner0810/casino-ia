@@ -107,10 +107,13 @@ export async function refresh(refreshToken) {
   // Rotación atómica: revoca el viejo y emite el nuevo en la misma transacción
   const { prisma } = await import('../../shared/prisma.client.js');
   const [nuevoRefresh] = await prisma.$transaction(async (tx) => {
-    await tx.refreshToken.update({
-      where: { id: guardado.id },
+    const revocado = await tx.refreshToken.updateMany({
+      where: { id: guardado.id, revokedAt: null, expiresAt: { gt: new Date() } },
       data: { revokedAt: new Date() },
     });
+    if (revocado.count !== 1) {
+      throw new ApiError(401, 'Refresh token inválido o expirado');
+    }
     const token = randomBytes(48).toString('hex');
     await tx.refreshToken.create({
       data: {
@@ -130,10 +133,10 @@ export async function refresh(refreshToken) {
   };
 }
 
-export async function logout(refreshToken) {
+export async function logout(refreshToken, userId) {
   const tokenHash = sha256(refreshToken);
   const guardado = await repo.findRefreshValido(tokenHash);
-  if (guardado) {
+  if (guardado && guardado.userId === userId) {
     await repo.revokeRefresh(guardado.id);
   }
   // Respuesta idéntica exista o no el token: no se filtra información

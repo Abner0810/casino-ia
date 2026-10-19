@@ -3,10 +3,13 @@ import { prisma } from '../../../shared/prisma.client.js';
 export const crearPartida = (tx, data) => tx.partidaBlackjack.create({ data });
 
 // ownership integrado en la query: solo encuentra partidas del usuario
-export const partidaActiva = (tx, id, userId) =>
-  (tx ?? prisma).partidaBlackjack.findFirst({
+export const partidaActiva = async (tx, id, userId) => {
+  // Serializa acciones de la misma partida antes de leer su estado mutable.
+  await tx.$queryRaw`SELECT "id" FROM "PartidaBlackjack" WHERE "id" = ${id} AND "userId" = ${userId} FOR UPDATE`;
+  return tx.partidaBlackjack.findFirst({
     where: { id, userId, estado: 'ACTIVA' },
   });
+};
 
 export const guardarPartida = (tx, id, data) =>
   tx.partidaBlackjack.update({ where: { id }, data });

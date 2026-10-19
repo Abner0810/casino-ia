@@ -9,6 +9,10 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET debe tener al menos 32 caracteres'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET debe tener al menos 32 caracteres'),
   CORS_ORIGINS: z.string().default('*'),
+}).superRefine((value, ctx) => {
+  if (value.NODE_ENV === 'production' && value.CORS_ORIGINS.split(',').some((origin) => origin.trim() === '*')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['CORS_ORIGINS'], message: 'En producción debes configurar orígenes explícitos, sin comodines' });
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);

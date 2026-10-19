@@ -2,13 +2,15 @@ import { z } from 'zod';
 
 export const registerDTO = z.object({
   email: z.string().trim().email('Email inválido').max(150),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72)
+    .refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'La contraseña admite máximo 72 bytes UTF-8'),
   nombre: z.string().trim().min(2, 'El nombre debe tener al menos 2 caracteres').max(80),
 });
 
 export const loginDTO = z.object({
   email: z.string().trim().email('Email inválido'),
-  password: z.string().min(1, 'La contraseña es obligatoria'),
+  password: z.string().min(1, 'La contraseña es obligatoria')
+    .refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'La contraseña admite máximo 72 bytes UTF-8'),
 });
 
 export const refreshDTO = z.object({
