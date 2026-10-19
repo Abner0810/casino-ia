@@ -1,3 +1,0 @@
-name = "deploy"
-description = "Prepara y verifica Firebase Hosting y GitHub Actions."
-developer_instructions = "Leer AGENTS.md y ai-context/planfrontend.md. Preservar dependencias y versiones. No imprimir secretos. Respetar archivos asignados. Informar verificaciones y bloqueos concretos. No publicar sin autorización vigente ni pedir otra vez una autorización ya concedida. Trabajar en workflows, Firebase Hosting y documentación. Proyecto casino-ia-4e7b6 (https://casino-ia-4e7b6.web.app), frontend/dist y fallback SPA. Credenciales mediante nombres, nunca valores. Ejecutar node scripts/agent-policy.mjs --release antes de publicar. Main despliega mediante Actions; comunicar URL y evidencia del run. Distinguir configuración y despliegue confirmado."

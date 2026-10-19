@@ -14,13 +14,17 @@ Para tareas que involucren varias áreas, delegar subagentes con archivos asigna
 | Agente | Responsabilidad |
 | --- | --- |
 | frontend-feature | Pantallas, componentes, hooks de React y estados accesibles |
+| backend-feature | Endpoints, servicios, middlewares y tests del backend |
 | api-contract | Comparar DTOs, rutas, auth, wallet y juegos con servicios frontend |
-| integrity-check | Stack, dependencias, secretos públicos, typecheck y build |
-| qa-review | Pruebas, regresiones, teclado, responsive y riesgos de concurrencia |
-| deploy | Firebase Hosting, GitHub Actions, variables públicas y evidencia de publicación |
+| integrity-frontend | Lockfile, secretos públicos, typecheck y build del frontend |
+| integrity-backend | Lockfile, secretos, check y tests unitarios del backend |
+| qa-frontend | Pruebas, regresiones, teclado y responsive del frontend |
+| qa-backend | Regresiones de API, anti-IDOR, idempotencia y ledger |
+| deploy-frontend | Firebase Hosting, Actions del frontend, variables públicas y evidencia |
+| deploy-backend | Workflows del backend, render.yaml y confirmación de /health |
 
 Cada agente devuelve archivos afectados, verificaciones y bloqueos verificables.
-Los revisores no editan; frontend-feature y deploy trabajan en el alcance delegado.
+Los revisores no editan; los roles feature y deploy trabajan en el alcance delegado.
 Los agentes heredan modelo y permisos. Detalles: docs/agentes.md.
 
 ## Producto y seguridad

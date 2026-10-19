@@ -1,5 +1,15 @@
 #!/bin/sh
 set -eu
-cd "$(git rev-parse --show-toplevel)/backend"
+cd "$(git rev-parse --show-toplevel)"
+
+# Regla 1: el git flow exige merge vía PR; no se empuja directo a main.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "⛔ Este hook evita pushear a main. Sigue el git flow: dev → qa → main vía PR." >&2
+    exit 1
+  fi
+done
+
+cd backend
 node scripts/check.mjs
 npm run test:unit

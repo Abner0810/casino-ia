@@ -1,39 +1,67 @@
 # Agentes y hooks
 
-Los cinco roles existen en `.codex/agents/*.toml` y `.opencode/agents/*.md`.
+Los nueve roles existen en `.codex/agents/*.toml` y `.opencode/agents/*.md`.
 No fijan modelos: heredan la selección de la sesión y no agregan dependencias.
 
 | Rol | Uso y entrega |
 | --- | --- |
 | frontend-feature | Implementar una funcionalidad con hooks de React, estados accesibles y pruebas pertinentes |
+| backend-feature | Implementar endpoints, servicios y tests en backend/src con la arquitectura por capas existente |
 | api-contract | Revisar DTOs y rutas de cada módulo; devolver incompatibilidades sin editar |
-| integrity-check | Validar stack, lockfile, ausencia de secretos y compilación sin editar |
-| qa-review | Verificar regresiones, teclado, responsive, autenticación y juegos sin editar |
-| deploy | Preparar Firebase/Actions y comprobar publicación usando la autorización vigente |
+| integrity-frontend | Validar lockfile del frontend, ausencia de secretos y compilación sin editar |
+| integrity-backend | Validar lockfile del backend, checks y tests unitarios sin editar |
+| qa-frontend | Verificar regresiones, teclado, responsive, autenticación y juegos sin editar |
+| qa-backend | Verificar regresiones de API, anti-IDOR, idempotencia y ledger sin editar |
+| deploy-frontend | Preparar Firebase/Actions del frontend y comprobar publicación usando la autorización vigente |
+| deploy-backend | Preparar workflows y render.yaml del backend y confirmar /health con el SHA desplegado |
 
-En Codex: «Usa frontend-feature para implementar X y api-contract para revisar sus DTOs;
+En Codex: «Usa backend-feature para implementar X y api-contract para revisar sus DTOs;
 asigna archivos sin solapamiento y espera ambos resultados». Las definiciones se descubren
-automáticamente al abrir una nueva sesión en este repositorio. En OpenCode se puede
-invocar `@frontend-feature`, `@deploy`, `@integrity-check`, `@qa-review` o `@api-contract`.
+automáticamente al abrir una nueva sesión en este repositorio. En OpenCode se pueden
+invocar con `@` seguido del nombre del rol.
 
-Los hooks de Codex viven en `.codex/hooks.json`; SessionStart verifica el stack y añade
-contexto. PreToolUse bloquea instalaciones/actualizaciones de paquetes, manifests,
-lockfiles y archivos `.env` reales. Antes de git push o firebase deploy ejecuta
-typecheck, lint, tests y build. El plugin `.opencode/plugins/casino-guardia.js` aplica
-la misma política mediante `tool.execute.before`, sin SDK ni instalación adicional.
+## Hooks
 
-La integridad compara dependencias/engines con `.codex/dependency-baseline.json` y
-SHA-256 del lockfile normalizado a LF para funcionar igual en Windows y Linux.
-La referencia corresponde al commit `75d2fff` de `frontmedias`; `dev` todavía no tenía frontend.
-No regenerarla para ocultar cambios de dependencias.
+Cuatro reglas, aplicadas en tres capas con la misma política (`scripts/agent-policy.mjs`):
 
-Desde la raíz del repositorio:
+| # | Regla | Git hooks | Agentes (Codex y OpenCode) |
+| --- | --- | --- | --- |
+| 1 | No pushear a main: el git flow exige PR (dev → qa → main) | `pre-push` lee los refs de stdin y aborta si el destino es `refs/heads/main` | `evaluateOperation` deniega `git push` con destino main (`origin main`, `HEAD:main`, `dev:main`) |
+| 2 | Archivos sensibles o pesados, con o sin gitignore | `pre-commit` revisa paths en el índice y tamaños > 1 MB | Se deniega escritura sobre `.env` reales, `node_modules`, `dist`, `build`, `coverage`, llaves, credenciales y binarios |
+| 3A | Secretos por contenido: patrones concretos (clave privada, tokens AWS/GitHub, JWT firmado y valores reales de las variables sensibles del proyecto) | `pre-commit` escanea el diff en el índice | Se escanea el texto de comandos y ediciones |
+| 3C | Convención de commits: `tipo(scope): mensaje` | `pre-commit` valida el primer renglón de COMMIT_EDITMSG | Se valida `git commit -m` |
+
+Excepciones de la regla 3A: archivos `.example`, `*.test.*`/`*.spec.*`, directorios
+`tests/`, marcadores de ejemplo (`<...>`, `${...}`, `...`, `TU-`, `cambia-`, `REEMPLAZAR`,
+`ci-access-secret`, `casino_test:casino_test@localhost`, entre otros) y asignaciones de
+variables en código. Los mensajes generados por git (`Merge`, `Revert`, `fixup!`) y los
+escapes `--amend`/`--no-verify` pasan sin convención. No se valida `password:` genérico
+para no bloquear validadores legítimos de auth.
+
+Los hooks de Codex viven en `.codex/hooks.json`; SessionStart verifica ambas baselines y
+añade contexto. PreToolUse aplica estas reglas antes de cada herramienta. El plugin
+`.opencode/plugins/casino-guardia.js` aplica la misma política mediante
+`tool.execute.before`, sin SDK ni instalación adicional.
+
+## Baselines de dependencias
+
+La integridad compara dependencias/engines y SHA-256 del lockfile normalizado a LF
+para funcionar igual en Windows y Linux, con dos archivos:
+
+- `.codex/dependency-baseline.json` — frontend, referencia del commit `75d2fff` de `frontmedias`.
+- `.codex/dependency-baseline-backend.json` — backend, estado auditado al crearla.
+
+No regenerarlas para ocultar cambios de dependencias. Desde la raíz del repositorio:
 
 ```sh
 node scripts/agent-policy.mjs
 node --test scripts/agent-policy.test.mjs
 node scripts/agent-policy.mjs --release
 ```
+
+`--release` verifica ambas baselines, typecheck/lint/test/build de frontend y
+check/test:unit de backend. Los git hooks se instalan con `npm run hooks:install`
+(`git config core.hooksPath .githooks`); en Windows los ejecuta Git for Windows.
 
 Los hooks no son una frontera de seguridad: scripts arbitrarios pueden escribir archivos,
 otros comandos pueden publicar y una sesión sin hooks activos no ejecuta esta política.
