@@ -1,4 +1,12 @@
 import { toDecimal } from './money.js';
+import { currentTransaction } from '../transaction.js';
+import { ApiError } from '../ApiError.js';
+
+function validateAmount(monto) {
+  if (!monto.isFinite() || !monto.gt(0) || monto.decimalPlaces() > 2) {
+    throw new ApiError(400, 'Monto inválido', undefined, 'INVALID_AMOUNT');
+  }
+}
 
 // ─────────────────────────────────────────────────────────────
 // LEDGER helper: la ÚNICA forma autorizada de tocar un saldo.
@@ -13,18 +21,19 @@ import { toDecimal } from './money.js';
  */
 export async function debitar(tx, userId, monto, juego, descripcion, tipo = 'APUESTA') {
   const montoDec = toDecimal(monto);
+  validateAmount(montoDec);
   const actualizado = await tx.wallet.updateMany({
     where: { userId, saldo: { gte: montoDec } }, // condición = candado lógico contra carreras
     data: { saldo: { decrement: montoDec } },
   });
   if (actualizado.count === 0) {
-    const { ApiError } = await import('../ApiError.js');
-    throw new ApiError(400, 'Saldo insuficiente para esta operación');
+    throw new ApiError(400, 'Saldo insuficiente para esta operación', undefined, 'INSUFFICIENT_BALANCE');
   }
   const despues = await tx.wallet.findUniqueOrThrow({ where: { userId } });
   await tx.movimiento.create({
     data: {
       userId,
+      operationId: currentTransaction()?.operationId,
       tipo,
       monto: montoDec,
       saldoAntes: despues.saldo.add(montoDec),
@@ -41,17 +50,21 @@ export async function debitar(tx, userId, monto, juego, descripcion, tipo = 'APU
  */
 export async function acreditar(tx, userId, monto, juego, descripcion, tipo = 'PREMIO') {
   const montoDec = toDecimal(monto);
-  const antes = await tx.wallet.findUniqueOrThrow({ where: { userId } });
-  const despues = await tx.wallet.update({
-    where: { userId },
+  validateAmount(montoDec);
+  const limit = toDecimal('9999999999.99').minus(montoDec);
+  const updated = await tx.wallet.updateMany({
+    where: { userId, saldo: { lte: limit } },
     data: { saldo: { increment: montoDec } },
   });
+  if (updated.count !== 1) throw new ApiError(400, 'El saldo supera el máximo permitido', undefined, 'BALANCE_LIMIT');
+  const despues = await tx.wallet.findUniqueOrThrow({ where: { userId } });
   await tx.movimiento.create({
     data: {
       userId,
+      operationId: currentTransaction()?.operationId,
       tipo,
       monto: montoDec,
-      saldoAntes: antes.saldo,
+      saldoAntes: despues.saldo.minus(montoDec),
       saldoDespues: despues.saldo,
       juego: juego ?? null,
       descripcion,

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const actionDTO = z.object({ version: z.number().int().nonnegative() }).strict();
+
 export const startDTO = z.object({
   apuesta: z
     .number({ invalid_type_error: 'La apuesta debe ser numérica' })
