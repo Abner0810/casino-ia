@@ -1,5 +1,10 @@
 # 🎰 Casino API — Simulador Plinko + Blackjack
 
+El repositorio incluye ahora la SPA en [`frontend/`](frontend/README.md),
+con Firebase Hosting, CI/CD y agentes especializados para Codex/OpenCode.
+Consulta la [comparación con dev y pendientes reales](ai-context/comparacion-frontend.md)
+y la [guía de agentes y hooks](docs/agentes.md).
+
 API REST de un simulador de casino con dos juegos: **Plinko** (apuestas pequeñas, medianas y grandes) y **Blackjack** (split, doblar apuesta, rendición).
 
 ## Stack

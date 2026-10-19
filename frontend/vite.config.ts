@@ -16,6 +16,6 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
   build: {
-    sourcemap: true,
+    sourcemap: false,
   },
 })

@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom'
 import { useSession } from '@/features/auth/session.context'
 import { env } from '@/config/env'
+import { Alert } from '@/shared/ui'
 import estilos from './PublicLayout.module.css'
 
 /** Layout de páginas públicas (presentación, registro, login). */
@@ -38,6 +39,7 @@ export function PublicLayout() {
       </header>
 
       <main id="contenido" className={estilos.contenido}>
+        {!env.apiConfigured && <Alert tipo="aviso" titulo="Conexión pendiente">Las cuentas, la billetera y los juegos estarán disponibles cuando se habilite la conexión del simulador.</Alert>}
         <Outlet />
       </main>
 

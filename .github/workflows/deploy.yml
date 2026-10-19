@@ -13,6 +13,8 @@ on:
   workflow_dispatch: # permite disparar el deploy manual desde la pestaña Actions
 
 jobs:
+  integration:
+    uses: ./.github/workflows/backend-checks.yml
   test:
     runs-on: ubuntu-latest
     defaults:
@@ -47,7 +49,7 @@ jobs:
         run: node tests/smoke.http.mjs
 
   deploy:
-    needs: test # solo despliega si los tests pasaron
+    needs: [test, integration] # publica solo con lógica e integración aprobadas
     runs-on: ubuntu-latest
     steps:
       - name: Disparar deploy en Render

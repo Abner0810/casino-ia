@@ -1,4 +1,5 @@
 import { http } from '@/shared/api/http'
+import { ejecutarOperacion } from '@/shared/api/operations'
 
 /** Saldo mostrado en cabecera y billetera. El bono va SEPARADO del saldo. */
 export type Saldo = {
@@ -36,9 +37,9 @@ export const walletApi = {
 
   /** POST /api/transactions/deposit — recarga simulada, sin datos de pago reales. */
   depositar: (monto: number, metodo: MetodoSimulado = 'simulado') =>
-    http<RespuestaOperacion>('transactions/deposit', { method: 'POST', body: { monto, metodo } }),
+    ejecutarOperacion<RespuestaOperacion>('transactions/deposit', { monto, metodo }),
 
   /** POST /api/transactions/withdraw */
   retirar: (monto: number, metodo: MetodoSimulado = 'simulado') =>
-    http<RespuestaOperacion>('transactions/withdraw', { method: 'POST', body: { monto, metodo } }),
+    ejecutarOperacion<RespuestaOperacion>('transactions/withdraw', { monto, metodo }),
 }

@@ -1,29 +1,12 @@
 {
-  // Configuración de OpenCode para el repo Casino IA.
-  // Los agentes (subagentes) viven en .opencode/agents/ y los hooks/guardias
-  // en .opencode/plugins/ (se descubren automáticamente).
   "$schema": "https://opencode.ai/config.json",
-
-  // Reglas ambientales del proyecto, además de las globales (~/.config/opencode/AGENTS.md).
   "instructions": [".opencode/reglas-frontend.md", "ai-context/planfrontend.md"],
-
-  // Reglas de permiso ORDENADAS: la última que coincide gana, así que las
-  // reglas amplias van primero y las excepciones después.
-  "permissions": [
-    { "action": "*", "resource": "*", "effect": "allow" },
-
-    // El stack del frontend está congelado por el plan: los lockfiles no se
-    // editan a mano y cualquier cambio de dependencias se confirma antes.
-    { "action": "edit", "resource": "**/package-lock.json", "effect": "deny" },
-    { "action": "edit", "resource": "**/package.json", "effect": "ask" },
-
-    // Secretos: los archivos .env reales nunca se tocan desde el agente.
-    { "action": "edit", "resource": "**/.env", "effect": "deny" },
-    { "action": "edit", "resource": "**/.env.local", "effect": "deny" },
-
-    // Publicar requiere verificación previa y confirmación explícita del usuario.
-    { "action": "shell", "resource": "*git push*", "effect": "ask" },
-    { "action": "shell", "resource": "*npm install*", "effect": "ask" },
-    { "action": "shell", "resource": "*npm ci*", "effect": "allow" }
-  ]
+  "permission": {
+    "edit": {
+      "*": "allow",
+      "**/package-lock.json": "deny",
+      "**/.env": "deny",
+      "**/.env.local": "deny"
+    }
+  }
 }

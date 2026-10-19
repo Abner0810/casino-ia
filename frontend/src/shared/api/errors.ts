@@ -13,6 +13,7 @@ export type DatosApiError = {
 }
 
 export class ApiError extends Error {
+  operationKey?: string
   readonly status: number
   readonly detalles: DetalleError[]
   /** true cuando ni siquiera hubo respuesta HTTP (red, timeout, JSON inválido) */
@@ -30,6 +31,10 @@ export class ApiError extends Error {
 
   get esSesion(): boolean {
     return this.status === 401
+  }
+
+  get mensaje(): string {
+    return this.message
   }
 }
 

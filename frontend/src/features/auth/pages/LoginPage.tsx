@@ -45,7 +45,7 @@ export function LoginPage() {
     try {
       await login.mutateAsync(datos)
       const destino = estado?.destino
-      navegar(destino && destino.startsWith('/') ? destino : '/inicio', { replace: true })
+      navegar(destino && destino.startsWith('/') && !destino.startsWith('//') && !destino.includes('\\') ? destino : '/inicio', { replace: true })
     } catch (error) {
       if (!aplicarErroresDeApi(error, setError)) {
         setErrorGeneral(

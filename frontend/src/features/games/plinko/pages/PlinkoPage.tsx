@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { invalidarDatosDeDinero } from '@/shared/api/invalidaciones'
+import { consultarOperacion } from '@/shared/api/operations'
 import { Alert, Button, Cargando, Input, Money } from '@/shared/ui'
 import { ApiError } from '@/shared/api/errors'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { formatearDinero, formatearMultiplicador, montoATexto, validarMontoTexto } from '@/shared/utils/money'
-import { useAccesoJuego, useApostarPlinko } from '@/features/games/games.hooks'
+import { useAccesoJuego, useApostarPlinko, useConfiguracionPlinko, useRondasPlinko } from '@/features/games/games.hooks'
 import type { ResultadoPlinko } from '@/features/games/games.api'
 import { ETIQUETA_RIESGO, PLINKO_FILAS } from '@/features/games/plinko/plinko.constantes'
 import type { Riesgo } from '@/features/games/plinko/plinko.constantes'
@@ -20,6 +23,9 @@ function esSaldoInsuficiente(error: ApiError | null): boolean {
 }
 
 export default function PlinkoPage() {
+  const queryClient = useQueryClient()
+  const rondas = useRondasPlinko()
+  const configuracion = useConfiguracionPlinko()
   const { data: acceso, isPending, isError, error, refetch } = useAccesoJuego('plinko')
   const apostar = useApostarPlinko()
   const reducido = useReducedMotion()
@@ -30,6 +36,9 @@ export default function PlinkoPage() {
   const [resultado, setResultado] = useState<ResultadoPlinko | null>(null)
   const [paso, setPaso] = useState(0)
   const [animando, setAnimando] = useState(false)
+  const [incierto, setIncierto] = useState(false)
+  const enviando = useRef(false)
+  const claveIncierta = useRef<string | undefined>(undefined)
 
   const accesoPlinko = acceso && acceso.juego === 'plinko' ? acceso : null
   const riesgos = accesoPlinko?.riesgos ?? []
@@ -67,7 +76,7 @@ export default function PlinkoPage() {
     return () => window.clearInterval(id)
   }, [animando, resultado])
 
-  const bloqueado = apostar.isPending || animando
+  const bloqueado = apostar.isPending || animando || incierto
   const errorAcceso = error instanceof ApiError ? error : null
   const errorMutacion = apostar.error instanceof ApiError ? apostar.error : null
   const anuncio =
@@ -76,10 +85,19 @@ export default function PlinkoPage() {
       : ''
 
   function enviarApuesta() {
-    if (!configRiesgo || errorApuesta) return
+    if (bloqueado || enviando.current || !configRiesgo || errorApuesta) return
+    enviando.current = true
+    setResultado(null)
     apostar.mutate(
       { apuesta: montoATexto(texto), riesgo: riesgoSeleccionado },
       {
+        onError: (error) => {
+          if (error instanceof ApiError && (error.esRed || error.status >= 500)) {
+            claveIncierta.current = error.operationKey
+            setIncierto(true)
+          }
+        },
+        onSettled: () => { enviando.current = false },
         onSuccess: (data) => {
           setResultado(data)
           if (reducido) {
@@ -95,9 +113,26 @@ export default function PlinkoPage() {
     )
   }
 
-  if (isPending) return <Cargando mensaje="Verificando tu acceso al tablero…" />
+  async function reconciliar() {
+    if (!claveIncierta.current || enviando.current) return
+    enviando.current = true
+    try {
+      const operacion = await consultarOperacion<ResultadoPlinko>(claveIncierta.current)
+      setResultado(operacion.response)
+      setPaso(PLINKO_FILAS)
+      invalidarDatosDeDinero(queryClient)
+      await Promise.all([refetch(), rondas.refetch()])
+      setIncierto(false)
+      claveIncierta.current = undefined
+      apostar.reset()
+    } catch {
+      // Un 404 puede preceder al commit: mantener el bloqueo y la misma clave.
+    } finally { enviando.current = false }
+  }
 
-  if (isError || !acceso || acceso.juego !== 'plinko') {
+  if (isPending || configuracion.isPending) return <Cargando mensaje="Verificando tu acceso al tablero…" />
+
+  if (isError || configuracion.isError || !acceso || acceso.juego !== 'plinko') {
     const saldo = esSaldoInsuficiente(errorAcceso)
     return (
       <section className={estilos.pagina} aria-labelledby="titulo-plinko">
@@ -123,7 +158,7 @@ export default function PlinkoPage() {
                 : (errorAcceso?.mensaje ?? 'No se pudo verificar tu acceso al juego.')}
             </Alert>
             <p className={estilos.accionesError}>
-              <Button onClick={() => void refetch()}>Reintentar</Button>
+              <Button onClick={() => { void refetch(); void configuracion.refetch() }}>Reintentar</Button>
             </p>
           </>
         )}
@@ -148,7 +183,7 @@ export default function PlinkoPage() {
 
       <div className={estilos.disposicion}>
         <div className={estilos.tableroEnvoltura}>
-          <Tablero riesgo={riesgoTablero} ruta={resultado?.ruta ?? null} paso={paso} />
+          <Tablero riesgo={riesgoTablero} multiplicadores={configuracion.data?.riesgos.find((opcion) => opcion.riesgo === riesgoTablero)?.multiplicadores ?? []} ruta={resultado?.ruta ?? null} paso={paso} />
           <p className={estilos.tableroPie}>
             Riesgo mostrado: <strong>{ETIQUETA_RIESGO[riesgoTablero]}</strong>
           </p>
@@ -220,7 +255,13 @@ export default function PlinkoPage() {
             </Button>
           </form>
 
-          {errorMutacion && (
+          {incierto && (
+            <Alert tipo="aviso" titulo="Resultado incierto">
+              La apuesta pudo aplicarse. Revisa el saldo y las rondas antes de realizar otra apuesta.
+              <Button onClick={() => void reconciliar()} cargando={rondas.isFetching}>Reconsultar saldo y rondas</Button>
+            </Alert>
+          )}
+          {errorMutacion && !incierto && (
             <Alert tipo="error" titulo="La apuesta no se completó">
               {errorMutacion.mensaje}
               {esSaldoInsuficiente(errorMutacion) && (

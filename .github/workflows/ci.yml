@@ -6,9 +6,11 @@ on:
   push:
     branches: [dev, qa]
   pull_request:
-    branches: [main]
+    branches: [dev, qa, main]
 
 jobs:
+  integration:
+    uses: ./.github/workflows/backend-checks.yml
   test:
     runs-on: ubuntu-latest
     defaults:

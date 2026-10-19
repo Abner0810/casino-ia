@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { abortarPendientes, configurarSesionHttp, registrarAccesoATokens } from '@/shared/api/http'
@@ -20,17 +20,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const estado = useSyncExternalStore(authStore.suscribir, authStore.obtener)
 
-  // Registro síncrono (una vez) para que cualquier efecto hijo ya tenga
-  // configurado el cliente HTTP antes de lanzar su primera consulta.
-  const registrado = useRef(false)
-  if (!registrado.current) {
-    registrado.current = true
+  // Configurar transporte antes de las consultas de efectos pasivos hijos.
+  useLayoutEffect(() => {
     registrarAccesoATokens(() => authStore.obtener().accessToken)
     configurarSesionHttp({
       refrescar: async () => {
         const { refreshToken } = authStore.obtener()
         if (!refreshToken) throw new Error('No hay refresh token disponible')
         const rotado = await authApi.refrescar(refreshToken)
+        if (authStore.obtener().refreshToken !== refreshToken) throw new DOMException('Sesión reemplazada', 'AbortError')
         authStore.rotarTokens(rotado.accessToken, rotado.refreshToken)
       },
       alPerderSesion: () => {
@@ -40,11 +38,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         queryClient.clear()
       },
     })
-  }
+  }, [queryClient])
 
   const iniciar = useCallback(
     (login: RespuestaLogin) => {
       // Caché limpia al iniciar sesión: nunca se mezclan datos de cuentas.
+      abortarPendientes()
+      void queryClient.cancelQueries()
       queryClient.clear()
       authStore.ponerSesion(login.usuario, login.accessToken, login.refreshToken)
     },
@@ -52,15 +52,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   )
 
   const cerrar = useCallback(async () => {
-    const { refreshToken } = authStore.obtener()
+    const { refreshToken, accessToken } = authStore.obtener()
     // La limpieza local ocurre SIEMPRE, incluso si falla la red.
     authStore.limpiar()
     abortarPendientes()
     void queryClient.cancelQueries()
     queryClient.clear()
-    if (refreshToken) {
+    if (refreshToken && accessToken) {
       try {
-        await authApi.cerrarSesion(refreshToken)
+        await authApi.cerrarSesion(refreshToken, accessToken)
       } catch {
         // La revocación remota no pudo confirmarse; los datos locales ya se limpiaron.
       }

@@ -43,6 +43,6 @@ export const authApi = {
     http<RespuestaRefresh>('auth/refresh', { method: 'POST', body: { refreshToken }, auth: false }),
 
   /** POST /api/auth/logout — revoca el refresh token. */
-  cerrarSesion: (refreshToken: string) =>
-    http<{ mensaje: string }>('auth/logout', { method: 'POST', body: { refreshToken }, auth: false }),
+  cerrarSesion: (refreshToken: string, accessToken: string) =>
+    http<{ mensaje: string }>('auth/logout', { method: 'POST', body: { refreshToken }, auth: false, accessToken }),
 }

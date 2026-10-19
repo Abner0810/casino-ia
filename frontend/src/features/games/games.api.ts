@@ -1,4 +1,5 @@
 import { http } from '@/shared/api/http'
+import { ejecutarOperacion } from '@/shared/api/operations'
 import type { Riesgo } from './plinko/plinko.constantes'
 
 export type Juego = 'plinko' | 'blackjack'
@@ -38,6 +39,12 @@ export type ResultadoPlinko = {
   saldoActual: number
 }
 
+export type ConfiguracionPlinko = {
+  filas: number
+  slots: number
+  riesgos: Array<{ riesgo: Riesgo; apuestaMinima: number; apuestaMaxima: number; multiplicadores: number[] }>
+}
+
 export type RondaPlinko = {
   id: string
   riesgo: Riesgo
@@ -58,10 +65,16 @@ export type Mano = {
   apuesta: number
   estado: EstadoMano
   ganancia: number | null
+  dividida: boolean
+  doblada: boolean
 }
 
 export type PartidaBlackjack = {
   partidaId: string
+  version: number
+  indiceManoActiva: number | null
+  accionesPermitidas: AccionBlackjack[]
+  resultado: unknown
   estado: EstadoPartida
   apuestaBase: number
   apuestaTotal: number
@@ -90,15 +103,18 @@ export const gamesApi = {
   acceso: (juego: Juego) => http<AccesoJuego>(`users/games/${juego}/access`, { method: 'POST' }),
 
   plinko: {
+    configuracion: () => http<ConfiguracionPlinko>('games/plinko/config'),
     apostar: (apuesta: number, riesgo: Riesgo) =>
-      http<ResultadoPlinko>('games/plinko/bet', { method: 'POST', body: { apuesta, riesgo } }),
-    rondas: () => http<RondaPlinko[]>('games/plinko/rounds'),
+      ejecutarOperacion<ResultadoPlinko>('games/plinko/bet', { apuesta, riesgo }),
+    rondas: async () => (await http<{ items: RondaPlinko[] }>('games/plinko/rounds')).items,
   },
 
   blackjack: {
-    iniciar: (apuesta: number) => http<PartidaBlackjack>('games/blackjack/start', { method: 'POST', body: { apuesta } }),
-    accion: (partidaId: string, accion: AccionBlackjack) =>
-      http<PartidaBlackjack>(`games/blackjack/${partidaId}/${accion}`, { method: 'POST' }),
-    rondas: () => http<PartidaResumen[]>('games/blackjack/rounds'),
+    activa: () => http<{ partida: PartidaBlackjack | null }>('games/blackjack/active'),
+    consultar: (partidaId: string) => http<PartidaBlackjack>(`games/blackjack/${partidaId}`),
+    iniciar: (apuesta: number) => ejecutarOperacion<PartidaBlackjack>('games/blackjack/start', { apuesta }),
+    accion: (partidaId: string, accion: AccionBlackjack, version: number) =>
+      ejecutarOperacion<PartidaBlackjack>(`games/blackjack/${partidaId}/${accion}`, { version }),
+    rondas: async () => (await http<{ items: PartidaResumen[] }>('games/blackjack/rounds')).items,
   },
 }
