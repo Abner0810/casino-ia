@@ -155,8 +155,16 @@ function validarLimites(apuesta) {
 }
 
 const estadoDe = (partida) => {
-  const parse = (value) => typeof value === 'string' ? JSON.parse(value) : value;
-  return { manos: parse(partida.manos), dealer: parse(partida.dealer), baraja: parse(partida.baraja) };
+  try {
+    const parse = (value) => typeof value === 'string' ? JSON.parse(value) : value;
+    const state = { manos: parse(partida.manos), dealer: parse(partida.dealer), baraja: parse(partida.baraja) };
+    if (!Array.isArray(state.manos) || !Array.isArray(state.baraja) || !Array.isArray(state.dealer?.cartas)) {
+      throw new Error('Invalid persisted game state');
+    }
+    return state;
+  } catch {
+    throw new ApiError(409, 'El estado de la partida no es válido');
+  }
 };
 
 function accionesPermitidas(state, partida, saldo) {

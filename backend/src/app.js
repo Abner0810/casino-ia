@@ -40,7 +40,8 @@ export function buildApp() {
   app.get('/health', async (req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
-      res.json({ status: 'ok', db: 'up' });
+      res.set('Cache-Control', 'no-store');
+      res.json({ status: 'ok', db: 'up', ...(process.env.RENDER_GIT_COMMIT ? { commit: process.env.RENDER_GIT_COMMIT } : {}) });
     } catch {
       res.status(503).json({ status: 'degraded', db: 'down' });
     }
