@@ -1,0 +1,150 @@
+.marco {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.lateral {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-soft);
+  overflow-x: auto;
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  padding-inline: var(--sp-2);
+}
+
+.nav {
+  display: flex;
+  gap: var(--sp-1);
+}
+
+.enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.enlace:hover {
+  color: var(--color-text);
+  background: var(--color-surface-2);
+}
+
+.enlaceActivo {
+  color: var(--color-primary-contrast);
+  background: var(--color-primary);
+}
+
+.columna {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.saldoBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saldoEtiqueta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.saldoValor {
+  font-size: var(--text-xl);
+  color: var(--color-primary);
+}
+
+.saldoError {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.nombre {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.contenido {
+  flex: 1;
+  width: 100%;
+  max-width: var(--ancho-maximo);
+  margin: 0 auto;
+  padding: var(--sp-4);
+}
+
+@media (min-width: 1024px) {
+  .marco {
+    flex-direction: row;
+  }
+
+  .lateral {
+    flex-direction: column;
+    align-items: stretch;
+    width: var(--sidebar-width);
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+    padding: var(--sp-4) var(--sp-3);
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+
+  .marca {
+    margin-bottom: var(--sp-4);
+    font-size: var(--text-lg);
+  }
+
+  .nav {
+    flex-direction: column;
+  }
+
+  .contenido {
+    padding: var(--sp-6) var(--sp-5);
+  }
+}

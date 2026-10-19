@@ -1,0 +1,20 @@
+.hueso {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--color-surface-2) 25%, var(--color-border) 50%, var(--color-surface-2) 75%);
+  background-size: 200% 100%;
+  animation: brillar 1.4s ease infinite;
+}
+
+.redondo {
+  border-radius: 50%;
+}
+
+@keyframes brillar {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

@@ -1,0 +1,66 @@
+/* Tokens visuales del simulador Casino IA.
+   Paleta oscura con acentos dorados; contrastes verificados para WCAG 2.2 AA. */
+:root {
+  color-scheme: dark;
+
+  /* Color */
+  --color-bg: #0b0e14;
+  --color-bg-soft: #10141d;
+  --color-surface: #161b27;
+  --color-surface-2: #1e2433;
+  --color-border: #2b3247;
+  --color-border-strong: #3a4260;
+  --color-text: #e9ebf3;
+  --color-text-muted: #a3abc2;
+  --color-primary: #f5c542;
+  --color-primary-hover: #ffd75e;
+  --color-primary-contrast: #1a1405;
+  --color-primary-soft: rgba(245, 197, 66, 0.14);
+  --color-secondary: #34d399;
+  --color-secondary-soft: rgba(52, 211, 153, 0.14);
+  --color-danger: #f87171;
+  --color-danger-soft: rgba(248, 113, 113, 0.13);
+  --color-success: #4ade80;
+  --color-success-soft: rgba(74, 222, 128, 0.13);
+  --color-info: #7cb7ff;
+  --color-info-soft: rgba(124, 183, 255, 0.13);
+  --color-focus: #a8c7ff;
+
+  /* Espaciado (escala base 4px) */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+
+  /* Radios */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Tipografía */
+  --font-sans: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+
+  /* Sombras y transiciones */
+  --shadow-1: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --transition-fast: 120ms ease;
+  --transition-med: 220ms ease;
+
+  /* Layout */
+  --header-height: 60px;
+  --sidebar-width: 232px;
+  --ancho-maximo: 1120px;
+}
