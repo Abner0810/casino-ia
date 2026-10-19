@@ -246,7 +246,7 @@ DIRECT_URL="postgresql://..."       # conexión directa para migrate deploy
 JWT_ACCESS_SECRET=...
 JWT_REFRESH_SECRET=...
 CORS_ORIGINS="https://tu-proyecto.web.app"
-PORT=10000
+PORT=3000
 ```
 
 ## 8. Deploy — Render
