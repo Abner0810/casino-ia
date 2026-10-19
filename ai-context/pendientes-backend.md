@@ -1,8 +1,9 @@
 # Pendientes — Backend Casino (lo que falta para dejarlo en producción)
 
-> Última actualización: 18 oct 2026
+> Última actualización: 19 oct 2026
 > Repo: https://github.com/Abner0810/casino-ia · Ramas: `dev` ✅ · `qa` ✅ · `main` ✅
-> Estado del código: **completo y verificado** (10 tests de lógica + 7 smoke tests en verde, CI pasando en GitHub Actions)
+> Estado del código: **completo y verificado** — `Backend checks` y `Backend integration checks` en verde en GitHub Actions (unit, integración con PostgreSQL 18 y e2e).
+> Estado del deploy: **ROTO** — `https://casino-ia-9llp.onrender.com/health` responde **503** (19 oct 2026). Los runs #2 y #3 de `Deploy backend to Render` fallaron por timeout de 25 min esperando salud; la causa está en la sección 1 (DB y variables sin configurar en Render).
 
 ---
 
@@ -35,18 +36,22 @@
 
 ## 2. 🔴 Obligatorio — Deploy automático desde GitHub Actions
 
-- [ ] En GitHub → `Settings → Secrets and variables → Actions → New repository secret`:
+> Flujo real vigente: workflow **`Deploy backend to Render`** (`deploy.yml`), documentado en
+> [`backend/DEPLOY.md`](../backend/DEPLOY.md). Usa el **deploy hook** de Render;
+> **no** usa `RENDER_API_KEY` ni `RENDER_SERVICE_ID`.
 
-| Secret | De dónde sale |
-|---|---|
-| `RENDER_API_KEY` | Render → **Account Settings → API Keys → Create API Key** |
-| `RENDER_SERVICE_ID` | ID del servicio en su página (`svc-xxxxxxxx...`) |
-
-- [ ] Verificar: hacer push a `main` → workflow **Deploy a Producción (Render)** →
-      job `test` en verde → job `deploy` dispara el deploy en Render
-- [ ] *Alternativa (si la API key no funciona en plan gratis)*: activar el
-      auto-deploy nativo de Render (*Service → Settings → Build & Deploy →
-      Auto Deploy: push to `main`*). Usar **una sola de las dos vías**, no ambas.
+- [x] Secret `RENDER_DEPLOY_HOOK_URL` configurado en GitHub (`Settings → Secrets and variables → Actions`)
+      — probado: los runs #2 y #3 llegaron hasta la espera de `/health`, lo que solo ocurre
+      si el secret es válido. La URL del hook contiene una clave: tratarla como credencial.
+- [ ] Verificar: hacer push a `main` (o ejecución manual desde Actions sobre `dev`, `main`
+      o `backend/polish-render`) → workflow **Deploy backend to Render** → job `test` en verde
+      → job `deploy` invoca el hook con `ref` = SHA completo validado y espera hasta 25 minutos
+      a que `/health` devuelva `status: ok`, `db: up` y `commit` igual al SHA.
+      **Estado 19 oct 2026: runs #2 y #3 fallaron por timeout** — el hook se aceptó pero el
+      servicio nunca quedó sano (falta completar la sección 1).
+- [ ] Mantener `autoDeployTrigger: off` en `render.yaml` (así está): el Blueprint y el hook
+      por SHA impiden despliegues que se salten el gate de CI. No activar el auto-deploy
+      nativo de Render ni usar una segunda vía.
 
 **Recordatorio del flujo de ramas acordado:**
 ```
@@ -90,8 +95,9 @@ Ejecutar contra la URL de Render con la DB conectada:
 
 ## 5. 📦 Siguiente gran fase (fuera del backend)
 
-- [ ] **Frontend React** → deploy en **Firebase Hosting**, apuntando a la API de Render
-      (login/registro, billetera, recargas/retiros, tablero Plinko, mesa Blackjack interactiva)
+- [x] **Frontend React** implementado en `frontend/` y publicado en **Firebase Hosting**
+      (https://casino-ia-4e7b6.web.app; publicación manual 19 oct 2026 — el workflow de
+      Actions `Firebase Hosting` aún no tiene ejecuciones; ver `pendientes-frontend.md`)
 - [ ] Completar `CORS_ORIGINS` en Render con el dominio real de Firebase
 
 ---
