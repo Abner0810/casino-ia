@@ -6,7 +6,7 @@
 
 ## 1. Obligatorio — Contratos y dependencias backend
 
-- [ ] Confirmar despliegue Render/PostgreSQL y URL de API, siguiendo [pendientes-backend.md](./pendientes-backend.md).
+- [ ] Confirmar despliegue Render/PostgreSQL y URL de API, siguiendo [pendientes-backend.md](./pendientes-backend.md). *(Estado 19 oct 2026: `https://casino-ia-9llp.onrender.com/health` responde **503**; sigue pendiente.)*
 - [ ] Registrar contrato reutilizable con ejemplos sanitizados de solicitudes, respuestas y errores de los seis módulos; contrastarlo con API real.
 - [x] Confirmar DTOs de apuestas, formato de cartas, paginación y transporte Bearer/refresh/logout.
 - [ ] Fijar unidad de saldo; presentar operaciones como simuladas y separar bono de saldo utilizable.
@@ -71,7 +71,7 @@
 
 ## 6. Obligatorio — QA y publicación
 
-- [x] Tipos, lint, pruebas críticas y build en CI (workflow preparado; ejecución remota pendiente de push).
+- [x] Tipos, lint, pruebas críticas y build en CI (ejecutado en GitHub Actions: `Frontend checks` en verde con typecheck, lint, Vitest, build y e2e Playwright — verificado 19 oct 2026).
 - [ ] Recorrido completo de cuenta, billetera, ambos juegos, movimientos y logout.
 - [ ] Escenarios reproducibles para split, ases divididos, doble, empate, natural y rendición.
 - [ ] Errores 400/401/403/404/409/429, red lenta, API caída y resultado de mutación incierto.

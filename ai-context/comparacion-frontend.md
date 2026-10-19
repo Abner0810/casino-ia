@@ -28,16 +28,19 @@ y el lockfile del frontend permanecen iguales al avance recibido.
   cuenta del repositorio. No se entregaron credenciales GitHub para verificarlo.
 - Activar API requiere VITE_API_URL, CORS, base de datos y migraciones en Render;
   después debe probarse el recorrido completo desde Firebase contra esa API real.
-- OpenCode no está instalado en esta máquina. Los handlers tienen pruebas, pero
-  no se afirma haber comprobado su carga en ese cliente. Codex requiere revisar
-  y confiar en sus hooks según las reglas del cliente.
+- OpenCode **sí está instalado en esta máquina** (corrección 19 oct 2026: la sesión de
+  auditoría opera en OpenCode). Los handlers de hooks tienen pruebas unitarias, pero la
+  carga del plugin `casino-guardia` dentro del cliente **no se confirmó** en esta revisión.
+  Codex requiere revisar y confiar en sus hooks según las reglas del cliente.
 - Las comprobaciones de accesibilidad automatizadas no constituyen certificación
   WCAG; contraste, lectores de pantalla, zoom y otros navegadores requieren revisión.
 
 ## Evidencia ejecutada
 
 - Rama de entrega: `feat/frontend-completo`, basada en el merge `0e24a27`.
-  El commit final se identifica con `git log -1` en esa rama; no se hizo push ni merge a dev.
+  El commit final se identifica con `git log -1` en esa rama. **Actualización 19 oct:**
+  la rama sí se publicó y fue mergeada a `dev` mediante el PR #3 ("completar frontend y
+  Firebase Hosting").
 - TypeScript, ESLint y build de producción: aprobados. `git diff 75d2fff --
   frontend/package.json frontend/package-lock.json` no muestra cambios.
 - Vitest: **33 pruebas**, ocho archivos, aprobadas.
@@ -50,8 +53,10 @@ y el lockfile del frontend permanecen iguales al avance recibido.
   comprobaciones smoke de middleware aprobadas. Health devolvió 503 con DB de
   prueba no disponible. No se ejecutó integración contra PostgreSQL en esta entrega:
   Docker no estaba iniciado. El nuevo workflow provisiona PostgreSQL 18 y ejecuta verify.
-- Los cinco workflows se analizaron como YAML válido. No se ejecutaron en GitHub
-  porque los cambios aún no se publicaron en el repositorio remoto.
+- Los cinco workflows se analizaron como YAML válido y **ya se ejecutaron en GitHub**
+  (19 oct 2026, 18 runs): `Backend checks` y `Frontend checks` en verde; los runs #2 y #3
+  de `Deploy backend to Render` fallaron por timeout de salud; `Firebase Hosting` sigue
+  con **0 ejecuciones** (la publicación actual fue manual por CLI).
 - **Firebase Hosting publicado** el 19 oct 2026 a las 12:51 (America/La_Paz),
   canal live, proyecto casino-ia-4e7b6. Versión **8b5aa58b6e8dd466**;
   release **1792428699811000**. URL: https://casino-ia-4e7b6.web.app
