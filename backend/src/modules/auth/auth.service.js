@@ -99,21 +99,16 @@ export async function login({ email, password }) {
 
 export async function refresh(refreshToken) {
   const tokenHash = sha256(refreshToken);
-  const guardado = await repo.findRefreshValido(tokenHash);
-  if (!guardado) {
-    throw new ApiError(401, 'Refresh token inválido o expirado');
-  }
-
-  // Rotación atómica: revoca el viejo y emite el nuevo en la misma transacción
+  // Consumir condicionalmente dentro de la transacción; un solo sucesor.
   const { prisma } = await import('../../shared/prisma.client.js');
-  const [nuevoRefresh] = await prisma.$transaction(async (tx) => {
-    const revocado = await tx.refreshToken.updateMany({
+  const { nuevoRefresh, user } = await prisma.$transaction(async (tx) => {
+    const guardado = await tx.refreshToken.findUnique({ where: { tokenHash }, include: { user: true } });
+    if (!guardado) throw new ApiError(401, 'Refresh token inválido o expirado');
+    const consumed = await tx.refreshToken.updateMany({
       where: { id: guardado.id, revokedAt: null, expiresAt: { gt: new Date() } },
       data: { revokedAt: new Date() },
     });
-    if (revocado.count !== 1) {
-      throw new ApiError(401, 'Refresh token inválido o expirado');
-    }
+    if (consumed.count !== 1) throw new ApiError(401, 'Refresh token inválido o expirado');
     const token = randomBytes(48).toString('hex');
     await tx.refreshToken.create({
       data: {
@@ -122,11 +117,11 @@ export async function refresh(refreshToken) {
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
       },
     });
-    return [token];
+    return { nuevoRefresh: token, user: guardado.user };
   });
 
   return {
-    accessToken: firmarAccess(guardado.user),
+    accessToken: firmarAccess(user),
     refreshToken: nuevoRefresh,
     tokenType: 'Bearer',
     expiresInMinutes: 30,

@@ -1,4 +1,5 @@
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import helmet from 'helmet';
 import cors from 'cors';
 import { corsConfig } from './config/cors.js';
@@ -12,6 +13,8 @@ import walletRoutes from './modules/wallet/wallet.routes.js';
 import transactionsRoutes from './modules/transactions/transaction.routes.js';
 import plinkoRoutes from './modules/games/plinko/plinko.routes.js';
 import blackjackRoutes from './modules/games/blackjack/blackjack.routes.js';
+import operationRoutes from './modules/operations/operation.routes.js';
+import { env } from './config/env.js';
 
 export function buildApp() {
   const app = express();
@@ -20,6 +23,15 @@ export function buildApp() {
   app.set('trust proxy', 1);
 
   app.use(helmet());
+  app.use((req, res, next) => {
+    req.requestId = randomUUID();
+    res.set('X-Request-Id', req.requestId);
+    const started = Date.now();
+    res.on('finish', () => {
+      if (env.esProduccion) console.log(JSON.stringify({ level: 'info', requestId: req.requestId, method: req.method, status: res.statusCode, durationMs: Date.now() - started }));
+    });
+    next();
+  });
   app.use(cors(corsConfig));
   app.use(express.json({ limit: '100kb' }));
   app.use(limiterGeneral);
@@ -41,6 +53,7 @@ export function buildApp() {
   app.use('/api/transactions', transactionsRoutes);
   app.use('/api/games/plinko', plinkoRoutes);
   app.use('/api/games/blackjack', blackjackRoutes);
+  app.use('/api/operations', operationRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

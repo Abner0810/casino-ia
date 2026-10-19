@@ -1,9 +1,5 @@
 import type { Riesgo } from '@/features/games/plinko/plinko.constantes'
-import {
-  MULTIPLICADORES_POR_RIESGO,
-  PLINKO_FILAS,
-  PLINKO_SLOTS,
-} from '@/features/games/plinko/plinko.constantes'
+import { PLINKO_FILAS, PLINKO_SLOTS } from '@/features/games/plinko/plinko.constantes'
 import { formatearMultiplicador } from '@/shared/utils/money'
 import estilos from './Tablero.module.css'
 
@@ -60,14 +56,14 @@ const CLAVIJAS = (() => {
 
 type Props = {
   riesgo: Riesgo
+  multiplicadores: number[]
   /** Secuencia del servidor ('I'/'D'); null mientras no hay resultado. */
   ruta: string[] | null
   /** Paso actual de la animación (0..PLINKO_FILAS). */
   paso: number
 }
 
-export function Tablero({ riesgo, ruta, paso }: Props) {
-  const multiplicadores = MULTIPLICADORES_POR_RIESGO[riesgo]
+export function Tablero({ riesgo, multiplicadores, ruta, paso }: Props) {
   const bola = ruta ? posicionesDeRuta(ruta)[Math.min(paso, PLINKO_FILAS)] : null
   const yCasillas = Y_INICIO + PLINKO_FILAS * PASO_Y
 
@@ -77,7 +73,7 @@ export function Tablero({ riesgo, ruta, paso }: Props) {
       viewBox={`0 0 ${VIEW_ANCHO} ${VIEW_ALTO}`}
       preserveAspectRatio="xMidYMid meet"
       role="img"
-      aria-label={`Tablero de Plinko con ${PLINKO_FILAS} filas de clavijas y ${PLINKO_SLOTS} casillas de premio para el riesgo mostrado`}
+      aria-label={`Tablero de Plinko con ${PLINKO_FILAS} filas de clavijas y ${PLINKO_SLOTS} casillas de premio para el riesgo ${riesgo}`}
     >
       <g aria-hidden="true">
         {CLAVIJAS.map((clavija) => (

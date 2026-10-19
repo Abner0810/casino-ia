@@ -1,6 +1,6 @@
 // SERVICIO PLINKO
 //
-// RNG 100% server-side (provably fair):
+// RNG 100% server-side (auditoría interna; sin protocolo público de equidad):
 //  1. Se genera una semilla de 32 bytes con CSPRNG (crypto.randomBytes)
 //     ANTES de conocer el resultado.
 //  2. La trayectoria se deriva de la semilla: byte[i] % 2 decide
@@ -11,7 +11,7 @@
 // El cliente jamás envía ni influye en el resultado.
 
 import { randomBytes } from 'crypto';
-import { prisma } from '../../../shared/prisma.client.js';
+import { userTransaction } from '../../../shared/transaction.js';
 import { ApiError } from '../../../shared/ApiError.js';
 import { toDecimal, toNumber, dosDecimales } from '../../../shared/utils/money.js';
 import { debitar, acreditar } from '../../../shared/utils/ledger.js';
@@ -50,7 +50,7 @@ export async function apostar(userId, { apuesta, riesgo }) {
   const ganancia = dosDecimales(montoApuesta.times(multiplicador));
 
   // Paso 3: cobrar todo de forma atómica (débito + premio + ledger + ronda)
-  const resultado = await prisma.$transaction(async (tx) => {
+  const resultado = await userTransaction(userId, async (tx) => {
     const saldoTrasApuesta = await debitar(
       tx,
       userId,
@@ -70,7 +70,7 @@ export async function apostar(userId, { apuesta, riesgo }) {
       );
     }
 
-    await repo.crearRonda(tx, {
+    const ronda = await repo.crearRonda(tx, {
       userId,
       apuesta: montoApuesta,
       riesgo,
@@ -79,10 +79,12 @@ export async function apostar(userId, { apuesta, riesgo }) {
       seed,
       rutaBola: ruta,
     });
-    return { saldoFinal };
+    return { saldoFinal, rondaId: ronda.id };
   });
 
   return {
+    rondaId: resultado.rondaId,
+    slot: indice,
     riesgo,
     apuesta: toNumber(montoApuesta),
     multiplicador,
@@ -90,6 +92,19 @@ export async function apostar(userId, { apuesta, riesgo }) {
     ruta,
     gananciaNeta: toNumber(ganancia.minus(montoApuesta)),
     saldoActual: toNumber(resultado.saldoFinal),
+  };
+}
+
+export function configuracion() {
+  return {
+    filas: PLINKO_FILAS,
+    slots: PLINKO_FILAS + 1,
+    direcciones: ['I', 'D'],
+    unidad: 'creditos_simulados',
+    riesgos: Object.entries(PLINKO_RIESGOS).map(([riesgo, cfg]) => ({
+      riesgo, apuestaMinima: cfg.min, apuestaMaxima: cfg.max,
+      multiplicadores: [...cfg.multiplicadores],
+    })),
   };
 }
 

@@ -2,7 +2,7 @@
 
 > Fecha: 19 oct 2026.
 > Base: [planbackend.md](./planbackend.md) y [pendientes-backend.md](./pendientes-backend.md), contrastados con rutas, DTOs y servicios del backend local.
-> Estado: propuesta de implementación. Este documento no acredita frontend construido ni API desplegada; las verificaciones del backend citadas en sus documentos son antecedentes, no pruebas ejecutadas en esta revisión.
+> Estado: diseño de referencia implementado en frontend/. La evidencia y los límites externos se registran en [comparacion-frontend.md](./comparacion-frontend.md); este plan por sí solo no acredita publicación ni API remota.
 
 ## 1. Objetivo y alcance
 

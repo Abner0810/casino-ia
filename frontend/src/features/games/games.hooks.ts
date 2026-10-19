@@ -30,6 +30,16 @@ export function useRondasPlinko() {
   })
 }
 
+export function useConfiguracionPlinko() {
+  const { usuario } = useSession()
+  return useQuery({
+    queryKey: ['plinko', 'config', usuario?.publicId],
+    queryFn: gamesApi.plinko.configuracion,
+    enabled: Boolean(usuario),
+    staleTime: 60_000,
+  })
+}
+
 export function useRondasBlackjack() {
   const { usuario } = useSession()
   return useQuery({
@@ -74,8 +84,8 @@ export function useAccionBlackjack() {
   const queryClient = useQueryClient()
   const { usuario } = useSession()
   return useMutation({
-    mutationFn: ({ partidaId, accion }: { partidaId: string; accion: AccionBlackjack }) =>
-      gamesApi.blackjack.accion(partidaId, accion),
+    mutationFn: ({ partidaId, accion, version }: { partidaId: string; accion: AccionBlackjack; version: number }) =>
+      gamesApi.blackjack.accion(partidaId, accion, version),
     onSuccess: () => {
       invalidarDatosDeDinero(queryClient)
       void queryClient.invalidateQueries({ queryKey: qk.blackjackRondas(usuario?.publicId) })

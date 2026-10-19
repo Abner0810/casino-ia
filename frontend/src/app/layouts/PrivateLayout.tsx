@@ -56,7 +56,7 @@ export function PrivateLayout() {
                 Sin conexión
               </span>
             ) : (
-              <Money valor={saldo.data.totalDisponible} className={estilos.saldoValor} />
+              <Money valor={saldo.data.saldo} className={estilos.saldoValor} />
             )}
           </div>
 

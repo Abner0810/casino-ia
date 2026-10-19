@@ -43,7 +43,8 @@ export const validateParams = (schema) => (req, res, next) => {
 export const validateQuery = (schema) => (req, res, next) => {
   try {
     ejecutar(schema, req.query, (r, v) => {
-      Object.defineProperty(r, 'query', { value: v, writable: true, configurable: true, enumerable: true });
+      // Express 5 expone query mediante un getter sin setter.
+      Object.defineProperty(r, 'query', { value: v, configurable: true, writable: true });
     }, req);
     next();
   } catch (error) {

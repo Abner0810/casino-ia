@@ -5,8 +5,9 @@
 
 import { rateLimit } from 'express-rate-limit';
 
-const mensaje = (limite) => ({
+const mensaje = (limite) => (req, res) => res.status(429).json({
   error: `Demasiadas peticiones. Límite de ${limite} por minuto, intenta más tarde.`,
+  codigo: 'RATE_LIMITED', requestId: req.requestId,
 });
 
 export const limiterGeneral = rateLimit({
@@ -14,7 +15,7 @@ export const limiterGeneral = rateLimit({
   limit: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: mensaje(100),
+  handler: mensaje(100),
 });
 
 export const limiterAuth = rateLimit({
@@ -22,7 +23,7 @@ export const limiterAuth = rateLimit({
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: mensaje(10),
+  handler: mensaje(10),
 });
 
 export const limiterJuegos = rateLimit({
@@ -30,5 +31,5 @@ export const limiterJuegos = rateLimit({
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: mensaje(30),
+  handler: mensaje(30),
 });

@@ -22,6 +22,9 @@ export type OpcionesHttp = {
   body?: unknown
   /** Agrega Authorization Bearer (por defecto true) */
   auth?: boolean
+  /** Credencial capturada exclusivamente para revocar la sesión ya limpiada. */
+  accessToken?: string
+  idempotencyKey?: string
   /** Señal de cancelación (TanStack Query la envía al cancelar/desmontar) */
   signal?: AbortSignal
   query?: Record<string, string | number | boolean | undefined | null>
@@ -51,8 +54,10 @@ export function configurarSesionHttp(opciones: {
 
 // ── Cancelación agrupada (logout): aborta todo lo pendiente ──
 const controladores = new Set<AbortController>()
+let generacionSesion = 0
 
 export function abortarPendientes(): void {
+  generacionSesion++
   for (const c of controladores) c.abort(new DOMException('Sesión finalizada', 'AbortError'))
   controladores.clear()
 }
@@ -84,10 +89,15 @@ async function pedir(url: URL, init: RequestInit, externa: AbortSignal | undefin
   }
 
   try {
-    return await fetch(url, { ...init, signal: controlador.signal })
+    const respuesta = await fetch(url, { ...init, signal: controlador.signal })
+    // Consumir el cuerpo dentro del timeout y del grupo de cancelación.
+    const texto = await respuesta.text()
+    return new Response(respuesta.status === 204 ? null : texto, {
+      status: respuesta.status, statusText: respuesta.statusText, headers: respuesta.headers,
+    })
   } catch (error) {
-    const abortado = (error as Error)?.name === 'AbortError'
-    if (abortado && expiro) {
+    const abortado = controlador.signal.aborted
+    if (expiro) {
       throw new ApiError({
         status: 0,
         mensaje: 'La solicitud tardó demasiado. Revisa tu conexión e inténtalo de nuevo.',
@@ -119,12 +129,24 @@ function renovarUnaVez(): Promise<void> {
 }
 
 export async function http<T>(ruta: string, opciones: OpcionesHttp = {}): Promise<T> {
+  if (env.apiConfigured === false) {
+    throw new ApiError({ status: 503, mensaje: 'La conexión del simulador está pendiente. Las cuentas y los juegos estarán disponibles pronto.' })
+  }
   const { method = 'GET', body, auth = true, signal, query } = opciones
+  const generacion = generacionSesion
+  const tokenInicial = obtenerAccessToken()
+  const verificarSesion = () => {
+    if (signal?.aborted || (auth && generacion !== generacionSesion)) {
+      throw new DOMException('Solicitud de una sesión anterior', 'AbortError')
+    }
+  }
   const url = construirUrl(ruta, query)
   const rutaLimpia = ruta.replace(/^\/+/, '')
 
   const encabezados: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) encabezados['Content-Type'] = 'application/json'
+  if (opciones.idempotencyKey) encabezados['Idempotency-Key'] = opciones.idempotencyKey
+  if (opciones.accessToken) encabezados.Authorization = `Bearer ${opciones.accessToken}`
   if (auth) {
     const token = obtenerAccessToken()
     if (token) encabezados.Authorization = `Bearer ${token}`
@@ -137,16 +159,22 @@ export async function http<T>(ruta: string, opciones: OpcionesHttp = {}): Promis
   }
 
   let respuesta = await pedir(url, init, signal)
+  verificarSesion()
 
   if (respuesta.status === 401 && auth && !EXENTAS_DE_REFRESH.has(rutaLimpia)) {
     try {
-      await renovarUnaVez()
+      // Un 401 tardío con el token anterior no debe rotar otra vez el refresh.
+      if (obtenerAccessToken() === tokenInicial) await renovarUnaVez()
+      verificarSesion()
     } catch {
+      verificarSesion()
       alPerderSesion?.()
       throw new ApiError({ status: 401, mensaje: 'Tu sesión expiró. Inicia sesión de nuevo.' })
     }
     // Un único reintento tras la renovación confirmada
     respuesta = await pedir(url, { ...init, headers: { ...encabezados, Authorization: `Bearer ${obtenerAccessToken() ?? ''}` } }, signal)
+    verificarSesion()
+    if (respuesta.status === 401) alPerderSesion?.()
   }
 
   if (!respuesta.ok) {

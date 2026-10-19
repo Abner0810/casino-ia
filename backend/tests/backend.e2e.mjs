@@ -20,7 +20,7 @@ let server, base, token, refreshToken;
 const email = `e2e-${randomUUID()}@example.com`;
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const response = await fetch(base + path, {
-    method, headers: { 'Content-Type': 'application/json', ...(auth && token ? { Authorization: `Bearer ${token}` } : {}) },
+    method, headers: { 'Content-Type': 'application/json', 'Idempotency-Key': randomUUID(), ...(auth && token ? { Authorization: `Bearer ${token}` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
     signal: AbortSignal.timeout(10000),
   });
@@ -34,6 +34,8 @@ before(async () => {
 });
 after(async () => {
   if (server) await new Promise(resolve => server.close(resolve));
+  await prisma.movimiento.deleteMany({ where: { user: { email } } });
+  await prisma.operation.deleteMany({ where: { user: { email } } });
   await prisma.user.deleteMany({ where: { email } });
   await prisma.$disconnect();
 });
@@ -93,12 +95,12 @@ test('HTTP real: salud, validación, autenticación y operaciones monetarias', a
     assert.equal(started.body.saldoActual, (await request('/api/wallet')).body.saldo);
     let current = started.body;
     if (current.estado === 'ACTIVA') {
-      const hit = await request(`/api/games/blackjack/${current.partidaId}/hit`, { method: 'POST' });
+      const hit = await request(`/api/games/blackjack/${current.partidaId}/hit`, { method: 'POST', body: { version: current.version } });
       assert.equal(hit.status, 200);
       assert.equal(hit.body.manos[0].cartas.length, 3);
       current = hit.body;
       if (current.estado === 'ACTIVA') {
-        const stand = await request(`/api/games/blackjack/${current.partidaId}/stand`, { method: 'POST' });
+        const stand = await request(`/api/games/blackjack/${current.partidaId}/stand`, { method: 'POST', body: { version: current.version } });
         assert.equal(stand.status, 200);
         current = stand.body;
       }
@@ -117,28 +119,29 @@ test('HTTP real: salud, validación, autenticación y operaciones monetarias', a
       userId: user.id, apuesta: 10, dealer: { cartas: ['10♠', '8♦'] }, baraja: ['2♣'],
       manos: [{ cartas: ['10♥', 'Q♣'], apuesta: 10, estado: 'ACTIVA', doblada: false, dividida: false, ganancia: null }],
     } });
-    const results = await Promise.all([1, 2].map(() => request(`/api/games/blackjack/${game.id}/stand`, { method: 'POST' })));
-    assert.deepEqual(results.map(r => r.status).sort(), [200, 404]);
+    const results = await Promise.all([1, 2].map(() => request(`/api/games/blackjack/${game.id}/stand`, { method: 'POST', body: { version: game.version } })));
+    assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
     assert.equal((await request('/api/wallet')).body.saldo, Number((before + 20).toFixed(2)));
     assert.equal((await prisma.partidaBlackjack.findUniqueOrThrow({ where: { id: game.id } })).estado, 'GANADA');
   });
-  await t.test('blackjack split permite tercera mano y surrender no devuelve manos perdidas', async () => {
+  await t.test('blackjack split permite tercera mano y cancelación simulada liquida una sola vez toda la mesa', async () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { email } });
     const hand = (cartas, estado = 'ACTIVA') => ({ cartas, apuesta: 10, estado, doblada: false, dividida: true, ganancia: null });
     const game = await prisma.partidaBlackjack.create({ data: {
       userId: user.id, apuesta: 10, dealer: { cartas: ['10♠', '8♦'] }, baraja: ['3♣', '2♣'],
       manos: [hand(['8♠', '8♦']), hand(['10♥', 'Q♣'], 'PERDIDA')],
     } });
-    const split = await request(`/api/games/blackjack/${game.id}/split`, { method: 'POST' });
+    const split = await request(`/api/games/blackjack/${game.id}/split`, { method: 'POST', body: { version: game.version } });
     assert.equal(split.status, 200);
     assert.equal(split.body.manos.length, 3);
     const before = (await request('/api/wallet')).body.saldo;
-    const results = await Promise.all([1, 2].map(() => request(`/api/games/blackjack/${game.id}/exit`, { method: 'POST' })));
-    assert.deepEqual(results.map(r => r.status).sort(), [200, 404]);
+    const results = await Promise.all([1, 2].map(() => request(`/api/games/blackjack/${game.id}/exit`, { method: 'POST', body: { version: split.body.version } })));
+    assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
     const exit = results.find(r => r.status === 200).body;
-    assert.equal(exit.devuelto, 10);
-    assert.equal(exit.manos.filter(m => m.estado === 'PERDIDA').length, 1);
-    assert.equal((await request('/api/wallet')).body.saldo, Number((before + 10).toFixed(2)));
+    assert.equal(exit.devuelto, 15);
+    assert.ok(exit.manos.every(m => m.estado === 'RENDIDA'));
+    assert.equal(exit.manos.reduce((sum, m) => sum + m.ganancia, 0), 15);
+    assert.equal((await request('/api/wallet')).body.saldo, Number((before + 15).toFixed(2)));
   });
   await t.test('logout requiere dueño del refresh token', async () => {
     assert.equal((await request('/api/auth/logout', { method: 'POST', auth: false, body: { refreshToken } })).status, 401);

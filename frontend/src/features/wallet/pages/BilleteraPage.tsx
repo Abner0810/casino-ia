@@ -1,17 +1,22 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { invalidarDatosDeDinero } from '@/shared/api/invalidaciones'
+import { consultarOperacion } from '@/shared/api/operations'
 import { Alert, Button, Input, Modal, Money, Skeleton } from '@/shared/ui'
 import { ApiError } from '@/shared/api/errors'
 import { MONTO_MAXIMO, formatearDinero, montoATexto, validarMontoTexto } from '@/shared/utils/money'
 import { formatearFechaHora } from '@/shared/utils/dates'
 import { useBalance, useDepositar, useRetirar, useSaldo } from '@/features/wallet/wallet.hooks'
 import type { Balance } from '@/features/wallet/wallet.api'
+import type { RespuestaOperacion } from '@/features/wallet/wallet.api'
 import estilos from './Billetera.module.css'
 
 /** Operación cuyo resultado quedó incierto por un fallo de red/timeout. */
 type OperacionIncierta = 'recarga' | 'retiro'
 
 export function BilleteraPage() {
+  const queryClient = useQueryClient()
   const saldo = useSaldo()
   const balance = useBalance()
   const depositar = useDepositar()
@@ -28,6 +33,9 @@ export function BilleteraPage() {
   const [exito, setExito] = useState<string | null>(null)
   const [errorOperacion, setErrorOperacion] = useState<string | null>(null)
   const [incierto, setIncierto] = useState<OperacionIncierta | null>(null)
+  const enviando = useRef(false)
+  const claveIncierta = useRef<string | undefined>(undefined)
+  const bloqueado = depositar.isPending || retirar.isPending || incierto !== null
 
   function limpiarAvisos() {
     setExito(null)
@@ -37,6 +45,7 @@ export function BilleteraPage() {
 
   async function enviarRecarga(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
+    if (bloqueado || enviando.current) return
     limpiarAvisos()
     const validacion = validarMontoTexto(montoRecarga)
     if (validacion) {
@@ -44,22 +53,25 @@ export function BilleteraPage() {
       return
     }
     setErrorRecarga(null)
+    enviando.current = true
     try {
       const respuesta = await depositar.mutateAsync(montoATexto(montoRecarga))
       setExito(`${respuesta.mensaje} Saldo actual: ${formatearDinero(respuesta.saldoActual)}.`)
       setMontoRecarga('')
     } catch (error) {
       // Un timeout deja el resultado incierto: NO se reenvía sola la operación.
-      if (error instanceof ApiError && error.esRed) {
+      if (error instanceof ApiError && (error.esRed || error.status >= 500)) {
         setIncierto('recarga')
+        claveIncierta.current = error.operationKey
       } else {
         setErrorOperacion(error instanceof ApiError ? error.mensaje : 'No se pudo completar la recarga.')
       }
-    }
+    } finally { enviando.current = false }
   }
 
   function abrirRetiro(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
+    if (bloqueado || enviando.current) return
     limpiarAvisos()
     const validacion = validarMontoTexto(montoRetiro)
     if (validacion) {
@@ -71,6 +83,8 @@ export function BilleteraPage() {
   }
 
   async function confirmarRetiro() {
+    if (bloqueado || enviando.current) return
+    enviando.current = true
     limpiarAvisos()
     try {
       const respuesta = await retirar.mutateAsync(montoATexto(montoRetiro))
@@ -79,18 +93,28 @@ export function BilleteraPage() {
       setModalRetiro(false)
     } catch (error) {
       setModalRetiro(false)
-      if (error instanceof ApiError && error.esRed) {
+      if (error instanceof ApiError && (error.esRed || error.status >= 500)) {
         setIncierto('retiro')
+        claveIncierta.current = error.operationKey
       } else {
         setErrorOperacion(error instanceof ApiError ? error.mensaje : 'No se pudo completar el retiro.')
       }
-    }
+    } finally { enviando.current = false }
   }
 
-  function reconsultarSaldo() {
-    setIncierto(null)
-    void saldo.refetch()
-    void balance.refetch()
+  async function reconsultarSaldo() {
+    if (!claveIncierta.current || enviando.current) return
+    enviando.current = true
+    try {
+      const operacion = await consultarOperacion<RespuestaOperacion>(claveIncierta.current)
+      invalidarDatosDeDinero(queryClient)
+      await Promise.all([saldo.refetch(), balance.refetch()])
+      setIncierto(null)
+      claveIncierta.current = undefined
+      setExito(operacion.response.mensaje)
+    } catch {
+      setErrorOperacion('La operación todavía no puede confirmarse. Espera y vuelve a consultar; no la repitas.')
+    } finally { enviando.current = false }
   }
 
   const reconsultando = saldo.isFetching || balance.isFetching
@@ -123,7 +147,7 @@ export function BilleteraPage() {
             No pudimos confirmar si tu {incierto === 'recarga' ? 'recarga' : 'retiro'} se aplicó. No la reenviamos
             automáticamente: reconsulta el saldo para ver el estado real antes de intentarlo de nuevo.
           </Alert>
-          <Button variante="secundario" cargando={reconsultando} onClick={reconsultarSaldo}>
+          <Button variante="secundario" cargando={reconsultando} onClick={() => void reconsultarSaldo()}>
             Reconsultar saldo
           </Button>
         </div>
@@ -196,7 +220,7 @@ export function BilleteraPage() {
               onChange={(evento) => setMontoRecarga(evento.target.value)}
               error={errorRecarga ?? undefined}
             />
-            <Button type="submit" ancho cargando={depositar.isPending}>
+            <Button type="submit" ancho cargando={depositar.isPending} disabled={bloqueado}>
               Simular recarga
             </Button>
           </form>
@@ -213,7 +237,7 @@ export function BilleteraPage() {
               onChange={(evento) => setMontoRetiro(evento.target.value)}
               error={errorRetiro ?? undefined}
             />
-            <Button type="submit" variante="peligro" ancho cargando={retirar.isPending}>
+            <Button type="submit" variante="peligro" ancho cargando={retirar.isPending} disabled={bloqueado}>
               Continuar con el retiro
             </Button>
           </form>

@@ -4,6 +4,7 @@ import { env } from './env.js';
 export const corsConfig = {
   origin: env.corsOrigins,
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+  exposedHeaders: ['X-Request-Id', 'Idempotency-Replayed', 'Retry-After'],
   credentials: false,
 };

@@ -3,11 +3,14 @@ on:
   push:
     branches: [main, dev, qa, frontmedias]
   pull_request:
-    branches: [main]
+    branches: [dev, qa, main]
   workflow_call:
 permissions:
   contents: read
 jobs:
+  integration:
+    needs: test
+    uses: ./.github/workflows/backend-checks.yml
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15

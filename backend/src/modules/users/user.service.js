@@ -61,7 +61,7 @@ export async function accesoJuego(userId, juego) {
     mesa: {
       apuestaMinima: BLACKJACK_LIMITES.MIN,
       apuestaMaxima: BLACKJACK_LIMITES.MAX,
-      reglas: ['Blackjack natural paga 3:2', 'El crupier planta en 17', 'Hasta 3 manos por split', 'Salir devuelve el 50% de las manos activas; las plantadas se resuelven contra el crupier'],
+      reglas: ['Blackjack natural paga 3:2', 'El crupier planta en 17', 'Hasta 3 manos por split', 'Salir cancela toda la mesa y devuelve el 50% de la apuesta total'],
     },
   };
 }

@@ -1,0 +1,10 @@
+---
+description: Audita integridad, stack congelado y calidad.
+mode: subagent
+permission:
+  edit: deny
+---
+
+Leer AGENTS.md y ai-context/planfrontend.md. Preservar dependencias y versiones. No imprimir secretos. Respetar archivos asignados. Informar verificaciones y bloqueos concretos. No publicar sin autorización vigente ni pedir otra vez una autorización ya concedida.
+
+Revisión sin ediciones. Ejecutar node scripts/agent-policy.mjs y checks frontend apropiados. Comparar dependencias y lockfile con baseline del commit 75d2fff (frontmedias), buscar secretos públicos y validar build. Reportar fallos reproducibles con archivo/línea; no cambiar dependencias.

@@ -1,0 +1,34 @@
+.pagina { display: grid; gap: var(--sp-6); }
+.pagina h1 { margin: 0 0 var(--sp-2); font-size: var(--text-3xl); }
+.pagina h2 { margin: 0 0 var(--sp-3); font-size: var(--text-lg); }
+.pagina p { line-height: 1.6; }
+.eyebrow { color: var(--color-primary); font-size: var(--text-xs); letter-spacing: .15em; margin: 0 0 var(--sp-2); }
+.muted { color: var(--color-text-muted); font-size: var(--text-sm); }
+.disposicion { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-5); align-items: start; }
+.mesa { min-height: 500px; padding: var(--sp-6); border: 1px solid #3c685c; border-radius: var(--radius-xl); background: radial-gradient(ellipse at top, #174c3a, #102a26 75%); text-align: center; box-shadow: inset 0 0 0 6px #ffffff04; }
+.crupier { min-height: 175px; }
+.cartas { list-style: none; margin: var(--sp-4) 0; padding: 0; display: flex; justify-content: center; gap: var(--sp-2); flex-wrap: wrap; }
+.carta { display: grid; place-items: center; width: 58px; height: 82px; border-radius: var(--radius-sm); background: #f8f5e9; color: #172029; font-family: var(--font-mono); font-weight: 700; font-size: var(--text-xl); box-shadow: 0 3px 6px #0005; }
+.roja { color: #a71b34; }
+.cartaSvg { display: block; width: 100%; height: 100%; }
+.inscripcion { margin: var(--sp-5) 0; color: #d8c083; font-size: var(--text-xs); letter-spacing: .14em; }
+.manos { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-3); }
+.mano { padding: var(--sp-4); border: 1px solid transparent; border-radius: var(--radius-lg); flex: 1 1 180px; min-width: 0; }
+.manoActiva { border-color: var(--color-primary); background: #f5c54208; }
+.mano p { margin: var(--sp-2) 0; font-size: var(--text-sm); }
+.turno { display: inline-block; font-size: var(--text-xs); color: var(--color-primary); }
+.panel { display: grid; gap: var(--sp-5); background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--sp-5); border-radius: var(--radius-lg); }
+.panel p { margin: 0; }
+.saldo { font-size: var(--text-2xl); }
+.acciones { display: grid; gap: var(--sp-3); }
+.resultado { border-top: 1px solid var(--color-border); padding-top: var(--sp-4); }
+.reglas { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.7; }
+.reglas summary { cursor: pointer; color: var(--color-text); }
+.reglas ul { padding-left: var(--sp-5); }
+.historial { border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--sp-5); background: var(--color-surface); min-width: 0; }
+.tablaScroll { overflow-x: auto; }
+.historial table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--text-sm); }
+.historial th, .historial td { padding: var(--sp-3); border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+.historial th { color: var(--color-text-muted); font-weight: 500; }
+@media (max-width: 900px) { .disposicion { grid-template-columns: 1fr; } .mesa { min-height: 420px; } }
+@media (max-width: 480px) { .mesa { padding: var(--sp-4); } .carta { width: 48px; height: 68px; font-size: var(--text-lg); } .historial { padding: var(--sp-3); } }

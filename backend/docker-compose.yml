@@ -1,0 +1,79 @@
+name: casino-backend
+
+x-api-environment: &api-environment
+  DATABASE_URL: postgresql://${POSTGRES_USER:-casino}:${POSTGRES_PASSWORD:?Run npm run docker:setup first}@postgres:5432/${POSTGRES_DB:-casino}
+  DIRECT_URL: postgresql://${POSTGRES_USER:-casino}:${POSTGRES_PASSWORD:?Run npm run docker:setup first}@postgres:5432/${POSTGRES_DB:-casino}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Run npm run docker:setup first}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Run npm run docker:setup first}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+  NODE_ENV: production
+  PORT: "3000"
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-casino}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run npm run docker:setup first}
+      POSTGRES_DB: ${POSTGRES_DB:-casino}
+    volumes:
+      # PostgreSQL 18 guarda los datos en un subdirectorio versionado.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  migrate:
+    build:
+      context: .
+      target: development
+    environment: *api-environment
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    logging: *logging
+
+  api:
+    build:
+      context: .
+      target: production
+    environment: *api-environment
+    ports:
+      - "127.0.0.1:${API_PORT:-3000}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    init: true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+    stop_grace_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    logging: *logging
+
+volumes:
+  postgres-data:
