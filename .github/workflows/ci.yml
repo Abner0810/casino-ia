@@ -1,7 +1,7 @@
 name: Backend checks
 on:
   push:
-    branches: [main, dev, qa, frontmedias]
+    branches: [dev, qa]
   pull_request:
     branches: [dev, qa, main]
   workflow_call:
@@ -37,8 +37,8 @@ jobs:
       CORS_ORIGINS: http://localhost:3001
       NODE_ENV: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
