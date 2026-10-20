@@ -615,6 +615,113 @@
         }
       }
     },
+    "/api/auth/change-password": {
+      "post": {
+        "operationId": "post__api_auth_change_password",
+        "summary": "Cambia la contraseña y revoca todas las sesiones",
+        "description": "Requiere Bearer vigente. Exige la contraseña actual; 401 si no coincide. La nueva debe ser distinta y cumplir 8-72 caracteres (72 bytes UTF-8). Revoca TODOS los refresh tokens del usuario: el cliente debe iniciar sesión de nuevo.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensaje": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "mensaje"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/users/profile": {
       "get": {
         "operationId": "get__api_users_profile",
@@ -1462,7 +1569,7 @@
               "type": "string",
               "format": "date-time"
             },
-            "description": "ISO 8601 con zona explícita; inclusivo. desde <= hasta."
+            "description": "ISO 8601 con zona explícita; inclusivo. desde <= hasta. desde no puede ser futuro (tolerancia de 5 min por reloj)."
           },
           {
             "name": "hasta",
@@ -1471,7 +1578,7 @@
               "type": "string",
               "format": "date-time"
             },
-            "description": "ISO 8601 con zona explícita; inclusivo. desde <= hasta."
+            "description": "ISO 8601 con zona explícita; inclusivo. desde <= hasta. desde no puede ser futuro (tolerancia de 5 min por reloj)."
           }
         ],
         "responses": {
@@ -3148,6 +3255,29 @@
         "required": [
           "refreshToken"
         ]
+      },
+      "ChangePasswordInput": {
+        "type": "object",
+        "properties": {
+          "passwordActual": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          },
+          "passwordNueva": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "passwordActual",
+          "passwordNueva"
+        ],
+        "example": {
+          "passwordActual": "cambia-esta-clave",
+          "passwordNueva": "nueva-clave-segura"
+        }
       },
       "Tokens": {
         "type": "object",

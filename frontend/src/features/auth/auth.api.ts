@@ -28,6 +28,7 @@ export type RespuestaRegistro = {
 
 export type DatosRegistro = { nombre: string; email: string; password: string }
 export type DatosLogin = { email: string; password: string }
+export type DatosCambioPassword = { passwordActual: string; passwordNueva: string }
 
 export const authApi = {
   /** POST /api/auth/register — no devuelve tokens: tras el registro se va a login. */
@@ -45,4 +46,8 @@ export const authApi = {
   /** POST /api/auth/logout — revoca el refresh token. */
   cerrarSesion: (refreshToken: string, accessToken: string) =>
     http<{ mensaje: string }>('auth/logout', { method: 'POST', body: { refreshToken }, auth: false, accessToken }),
+
+  /** POST /api/auth/change-password — cambia la contraseña y revoca toda sesión. */
+  cambiarPassword: (datos: DatosCambioPassword) =>
+    http<{ mensaje: string }>('auth/change-password', { method: 'POST', body: datos }),
 }

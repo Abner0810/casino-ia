@@ -3,7 +3,7 @@ import { Alert, Button, Input, Money, Skeleton } from '@/shared/ui'
 import type { FiltrosMovimientos } from '@/shared/api/queryKeys'
 import type { TipoMovimiento } from '@/features/transactions/movimientos.api'
 import { useMovimientos } from '@/features/transactions/movimientos.hooks'
-import { formatearFechaHora, finDelDia, inicioDelDia, zonaHorariaLocal } from '@/shared/utils/dates'
+import { formatearFechaHora, finDelDia, hoyISO, inicioDelDia, zonaHorariaLocal } from '@/shared/utils/dates'
 import estilos from './Movimientos.module.css'
 
 const POR_PAGINA = 10
@@ -27,9 +27,13 @@ export function MovimientosPage() {
   const [hastaDia, setHastaDia] = useState('')
 
   const zonaHoraria = zonaHorariaLocal()
+  const hoy = hoyISO()
 
   // Con 'YYYY-MM-DD' la comparación lexicográfica equivale a la cronológica.
   const errorRango = desdeDia && hastaDia && desdeDia > hastaDia ? 'La fecha "desde" no puede ser posterior a "hasta"' : undefined
+  // El historial no puede tener movimientos futuros: se acota la entrada.
+  const errorFuturo = desdeDia && desdeDia > hoy ? 'La fecha "desde" no puede estar en el futuro' : undefined
+  const errorFechas = errorRango ?? errorFuturo
 
   // Si el rango es inválido se omiten las fechas para no enviar una consulta
   // que el backend rechazaría; el error visible explica el motivo.
@@ -37,8 +41,8 @@ export function MovimientosPage() {
     pagina,
     porPagina: POR_PAGINA,
     tipo: tipo || undefined,
-    desde: errorRango ? undefined : inicioDelDia(desdeDia),
-    hasta: errorRango ? undefined : finDelDia(hastaDia),
+    desde: errorFechas ? undefined : inicioDelDia(desdeDia),
+    hasta: errorFechas ? undefined : finDelDia(hastaDia),
   }
 
   const movimientos = useMovimientos(filtros)
@@ -92,7 +96,8 @@ export function MovimientosPage() {
               setDesdeDia(evento.target.value)
               setPagina(1)
             }}
-            max={hastaDia || undefined}
+            max={hastaDia || hoy}
+            error={errorFuturo}
           />
           <Input
             etiqueta="Hasta"
@@ -103,6 +108,7 @@ export function MovimientosPage() {
               setPagina(1)
             }}
             min={desdeDia || undefined}
+            max={hoy}
             error={errorRango}
           />
           <p className={estilos.zonaHoraria}>Fechas en tu zona horaria: {zonaHoraria}</p>

@@ -70,6 +70,7 @@ Ejecutar contra la URL de Render con la DB conectada:
 - [ ] `POST /api/auth/login` → devuelve access (30min) + refresh
 - [ ] `POST /api/auth/refresh` → rota ambos tokens; el refresh viejo deja de servir
 - [ ] `POST /api/auth/logout` → revoca el refresh
+- [ ] `POST /api/auth/change-password` → 200 y la contraseña anterior deja de servir; con contraseña actual incorrecta → **401**
 - [ ] `POST /api/transactions/deposit` → saldo sube **y** aparece el movimiento DEPOSITO en `GET /api/transactions/history`
 - [ ] `POST /api/transactions/withdraw` con monto > saldo → **400** y ni el saldo ni el ledger cambian
 - [ ] `POST /api/users/games/plinko/access` → devuelve los 3 rangos de riesgo

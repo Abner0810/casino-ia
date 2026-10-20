@@ -27,3 +27,7 @@ export const refresh = manejar(async (req, res) => {
 export const logout = manejar(async (req, res) => {
   res.json(await service.logout(req.body.refreshToken, req.user.id));
 });
+
+export const changePassword = manejar(async (req, res) => {
+  res.json(await service.changePassword(req.user.id, req.body));
+});
