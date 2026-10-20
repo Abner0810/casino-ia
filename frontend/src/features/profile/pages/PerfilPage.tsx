@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Alert, Button, Input, Money, Skeleton } from '@/shared/ui'
+import { Alert, Button, Input, Modal, Money, Skeleton } from '@/shared/ui'
 import { ApiError } from '@/shared/api/errors'
 import { aplicarErroresDeApi } from '@/shared/utils/formErrors'
 import { formatearSoloFecha } from '@/shared/utils/dates'
+import { useCambiarPassword } from '@/features/auth/auth.hooks'
 import { useEditarPerfil, usePerfil } from '@/features/profile/profile.hooks'
 import type { Perfil } from '@/features/profile/profile.api'
 import type { Rol } from '@/features/auth/auth.api'
@@ -26,6 +27,23 @@ const esquema = z.object({
 })
 
 type Formulario = z.infer<typeof esquema>
+
+/** Reglas alineadas con changePasswordDTO del backend. */
+const esquemaPassword = z
+  .object({
+    passwordActual: z.string().min(1, 'La contraseña actual es obligatoria'),
+    passwordNueva: z
+      .string()
+      .min(8, 'La contraseña debe tener al menos 8 caracteres')
+      .max(72, 'La contraseña admite máximo 72 caracteres'),
+    confirmacion: z.string().min(1, 'Repite la nueva contraseña'),
+  })
+  .refine((datos) => datos.passwordNueva === datos.confirmacion, {
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmacion'],
+  })
+
+type FormularioPassword = z.infer<typeof esquemaPassword>
 
 export function PerfilPage() {
   const perfil = usePerfil()
@@ -57,6 +75,7 @@ export function PerfilPage() {
         <div className={estilos.rejilla}>
           <DatosPerfil perfil={perfil.data} />
           <FormularioNombre nombreInicial={perfil.data.nombre} />
+          <SeguridadPerfil />
         </div>
       )}
     </section>
@@ -191,6 +210,103 @@ function FormularioNombre({ nombreInicial }: { nombreInicial: string }) {
           Guardar cambios
         </Button>
       </form>
+    </section>
+  )
+}
+
+/** Cambio de contraseña: exige la actual, revoca todas las sesiones y obliga a re-loguear. */
+function SeguridadPerfil() {
+  const cambiar = useCambiarPassword()
+  const [abierto, setAbierto] = useState(false)
+  const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors },
+  } = useForm<FormularioPassword>({
+    resolver: zodResolver(esquemaPassword),
+    defaultValues: { passwordActual: '', passwordNueva: '', confirmacion: '' },
+  })
+
+  function cerrar() {
+    setAbierto(false)
+    setErrorGeneral(null)
+    reset()
+  }
+
+  const enviar = handleSubmit(async (datos) => {
+    setErrorGeneral(null)
+    try {
+      await cambiar.mutateAsync({ passwordActual: datos.passwordActual, passwordNueva: datos.passwordNueva })
+      // El hook cerró la sesión (revocada en servidor): queda volver a entrar.
+    } catch (error) {
+      if (!aplicarErroresDeApi(error, setError)) {
+        setErrorGeneral(
+          error instanceof ApiError ? error.mensaje : 'No se pudo cambiar la contraseña. Inténtalo de nuevo.',
+        )
+      }
+    }
+  })
+
+  return (
+    <section className={estilos.tarjeta} aria-labelledby="titulo-seguridad">
+      <h2 id="titulo-seguridad" className={estilos.tarjetaTitulo}>
+        Seguridad
+      </h2>
+      <p className={estilos.nota}>
+        Cambiar tu contraseña cerrará la sesión en todos tus dispositivos; tendrás que iniciar sesión de nuevo con la
+        contraseña nueva.
+      </p>
+      <Button variante="secundario" onClick={() => setAbierto(true)}>
+        Cambiar contraseña
+      </Button>
+
+      <Modal
+        abierto={abierto}
+        alCerrar={cerrar}
+        titulo="Cambiar contraseña"
+        pie={
+          <>
+            <Button variante="secundario" onClick={cerrar} disabled={cambiar.isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="form-cambiar-password" cargando={cambiar.isPending}>
+              Cambiar contraseña
+            </Button>
+          </>
+        }
+      >
+        {errorGeneral && <Alert tipo="error">{errorGeneral}</Alert>}
+
+        <form id="form-cambiar-password" className={estilos.formulario} onSubmit={enviar} noValidate>
+          <Input
+            etiqueta="Contraseña actual"
+            type="password"
+            autoComplete="current-password"
+            data-autofoco
+            error={errors.passwordActual?.message}
+            {...register('passwordActual')}
+          />
+          <Input
+            etiqueta="Nueva contraseña"
+            type="password"
+            autoComplete="new-password"
+            error={errors.passwordNueva?.message}
+            {...register('passwordNueva')}
+          />
+          <p className={estilos.ayudaCampo}>Entre 8 y 72 caracteres.</p>
+          <Input
+            etiqueta="Repite la nueva contraseña"
+            type="password"
+            autoComplete="new-password"
+            error={errors.confirmacion?.message}
+            {...register('confirmacion')}
+          />
+        </form>
+      </Modal>
     </section>
   )
 }

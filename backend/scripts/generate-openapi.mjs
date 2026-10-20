@@ -19,6 +19,7 @@ const schemas = {
   RegisterInput: object({ email: { type: 'string', format: 'email', maxLength: 150 }, password: { type: 'string', minLength: 8, maxLength: 72 }, nombre: ref('Nombre') }),
   LoginInput: object({ email: { type: 'string', format: 'email' }, password: { type: 'string', minLength: 1 } }),
   RefreshInput: object({ refreshToken: { type: 'string', minLength: 20 } }),
+  ChangePasswordInput: object({ passwordActual: { type: 'string', minLength: 1, maxLength: 72 }, passwordNueva: { type: 'string', minLength: 8, maxLength: 72 } }),
   Tokens: object({ accessToken: str, refreshToken: str, tokenType: { type: 'string', enum: ['Bearer'] }, expiresInMinutes: { type: 'integer', enum: [30] } }),
   Usuario: object({ publicId: str, email: { type: 'string', format: 'email' }, nombre: str, rol: { type: 'string', enum: ['JUGADOR', 'ADMIN'] } }),
   Profile: { allOf: [ref('Usuario'), object({ wallet: object({ saldo: money, bono: money }), creadoEn: date })] },
@@ -46,6 +47,7 @@ const paths = {};
 schemas.RegisterInput.example = { email: 'jugador@example.test', password: 'example-only-password', nombre: 'Jugador Demo' };
 schemas.LoginInput.example = { email: 'jugador@example.test', password: 'example-only-password' };
 schemas.TransactionInput.example = { monto: 100, metodo: 'simulado' };
+schemas.ChangePasswordInput.example = { passwordActual: 'cambia-esta-clave', passwordNueva: 'nueva-clave-segura' };
 schemas.BlackjackStart.example = { apuesta: 10 };
 schemas.BlackjackAction.example = { version: 0 };
 schemas.PlinkoBet.example = { apuesta: 10, riesgo: 'PEQUENO' };
@@ -89,6 +91,7 @@ endpoint('/api/auth/register', 'post', 'Crea cuenta y wallet vacía', { input: r
 endpoint('/api/auth/login', 'post', 'Inicia sesión', { input: ref('LoginInput'), output: { allOf: [ref('Tokens'), object({ usuario: ref('Usuario') })] }, publicRoute: true });
 endpoint('/api/auth/refresh', 'post', 'Consume refresh y rota tokens', { input: ref('RefreshInput'), output: ref('Tokens'), publicRoute: true, description: 'Refresh opaco de 7 días. Un solo consumo concurrente prospera. Token anterior revocado; no requiere access vigente.' });
 endpoint('/api/auth/logout', 'post', 'Revoca refresh de la sesión propia', { input: ref('RefreshInput'), description: 'Requiere Bearer vigente. Token ajeno/desconocido no se revoca y recibe respuesta genérica. No revoca inmediatamente access JWT emitidos.' });
+endpoint('/api/auth/change-password', 'post', 'Cambia la contraseña y revoca todas las sesiones', { input: ref('ChangePasswordInput'), description: 'Requiere Bearer vigente. Exige la contraseña actual; 401 si no coincide. La nueva debe ser distinta y cumplir 8-72 caracteres (72 bytes UTF-8). Revoca TODOS los refresh tokens del usuario: el cliente debe iniciar sesión de nuevo.' });
 endpoint('/api/users/profile', 'get', 'Consulta perfil propio', { output: ref('Profile') });
 endpoint('/api/users/profile', 'patch', 'Edita nombre propio', { input: object({ nombre: ref('Nombre') }), output: { allOf: [ref('Profile'), object({ mensaje: str })] } });
 endpoint('/api/users/games/{juego}/access', 'post', 'Valida acceso con saldo positivo y entrega límites', { params: [{ name: 'juego', in: 'path', required: true, schema: { type: 'string', enum: ['plinko', 'blackjack'] } }], output: object({ juego: str, saldo: money, riesgos: array(object({ riesgo: ref('Riesgo'), apuestaMinima: money, apuestaMaxima: money, maximoMultiplicador: { type: 'number' } })), mesa: object({ apuestaMinima: money, apuestaMaxima: money, reglas: array(str) }) }, ['juego', 'saldo']) });
@@ -99,7 +102,7 @@ endpoint('/api/transactions/history', 'get', 'Historial propio paginado', { outp
   { name: 'pagina', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
   { name: 'porPagina', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
   { name: 'tipo', in: 'query', schema: { type: 'string', enum: ['DEPOSITO', 'RETIRO', 'APUESTA', 'PREMIO'] } },
-  ...['desde', 'hasta'].map((name) => ({ name, in: 'query', schema: date, description: 'ISO 8601 con zona explícita; inclusivo. desde <= hasta.' })),
+  ...['desde', 'hasta'].map((name) => ({ name, in: 'query', schema: date, description: 'ISO 8601 con zona explícita; inclusivo. desde <= hasta. desde no puede ser futuro (tolerancia de 5 min por reloj).' })),
 ], description: 'Orden createdAt DESC e id DESC. No ofrece snapshot entre páginas; recargar página 1 tras mutaciones.' });
 endpoint('/api/games/plinko/config', 'get', 'Configuración de tablero, incluso con saldo cero', { output: ref('PlinkoConfig') });
 endpoint('/api/games/plinko/bet', 'post', 'Resuelve una apuesta Plinko', { input: ref('PlinkoBet'), output: ref('PlinkoResult'), mutation: true, status: 201, description: 'ganancia es retorno bruto, gananciaNeta descuenta apuesta. La ruta representa el resultado servidor. Seed solo para auditoría interna.' });
