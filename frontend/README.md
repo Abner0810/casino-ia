@@ -53,9 +53,11 @@ proyecto. Firebase solo aloja el frontend; autenticación y datos siguen en Expr
 2. GitHub → Settings → Secrets and variables → Actions: añadir el secret
    `FIREBASE_SERVICE_ACCOUNT_CASINO_IA` con el JSON de **casino-ia-4e7b6**.
    No guardar el JSON en el repositorio, chat ni variables VITE_.
-3. Cuando esté disponible Render, añadir la variable de Actions `VITE_API_URL`
-   con `https://SERVICIO.onrender.com/api`. Para QA se admite `VITE_API_URL_QA`;
-   si se omite, usa la de producción. Sin URL se publica el aviso de conexión pendiente.
+3. El workflow usa `https://casino-ia-9llp.onrender.com/api` como API pública
+   predeterminada. La variable de Actions `VITE_API_URL` permite cambiarla;
+   para QA se admite `VITE_API_URL_QA`, que tiene prioridad en esa rama.
+   La configuración se incorpora al bundle durante el build: cambiar una variable
+   de Actions requiere otro despliegue. La publicación rechaza una URL vacía o inválida.
 4. En Render, configurar `CORS_ORIGINS` con los orígenes reales separados por coma:
    `https://casino-ia-4e7b6.web.app,https://casino-ia-4e7b6.firebaseapp.com`.
    Agregar el origen exacto de preview QA cuando se utilice; no usar `*` en producción.
@@ -65,8 +67,10 @@ proyecto. Firebase solo aloja el frontend; autenticación y datos siguen en Expr
    real en su resumen y en el environment de GitHub.
 
 El workflow también puede lanzarse manualmente desde main/qa. Los cambios locales
-no activan Actions hasta que se publiquen en GitHub. Ningún push forma parte de
-esta entrega sin autorización adicional del usuario según el acuerdo adjunto.
+no activan Actions hasta que se publiquen en GitHub. Ejecutar
+`node scripts/agent-policy.mjs --release` desde la raíz antes de publicar y respetar
+la autorización vigente para push/despliegue. Confirmar el run de Actions y probar
+registro/login desde la URL publicada antes de dar el despliegue por verificado.
 
 Despliegue manual, desde frontend:
 

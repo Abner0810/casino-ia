@@ -23,7 +23,7 @@ jobs:
       - id: config
         name: Validar configuración pública y credencial CI
         env:
-          VITE_API_URL: ${{ github.ref == 'refs/heads/qa' && vars.VITE_API_URL_QA || vars.VITE_API_URL }}
+          VITE_API_URL: ${{ github.ref == 'refs/heads/qa' && vars.VITE_API_URL_QA || vars.VITE_API_URL || 'https://casino-ia-9llp.onrender.com/api' }}
           FIREBASE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CASINO_IA }}
         run: |
           node --input-type=module <<'NODE'
@@ -31,7 +31,7 @@ jobs:
           const raw = process.env.VITE_API_URL?.trim();
           const url = raw ? new URL(raw) : null;
           if (url && (url.protocol !== 'https:' || !url.pathname.endsWith('/api') || /TU-BACKEND|localhost|127\.0\.0\.1/i.test(raw))) throw new Error('VITE_API_URL debe apuntar al backend público HTTPS y terminar en /api.');
-          if (!url) console.log('::warning::Backend pendiente: se publicará la interfaz con aviso de conexión pendiente.');
+          if (!url) throw new Error('VITE_API_URL es obligatoria para publicar cuentas y juegos conectados.');
           const account = JSON.parse(process.env.FIREBASE_ACCOUNT || '{}');
           if (account.project_id !== 'casino-ia-4e7b6' || !account.private_key || !account.client_email) throw new Error('Configura FIREBASE_SERVICE_ACCOUNT_CASINO_IA con la cuenta de servicio del proyecto casino-ia-4e7b6.');
           appendFileSync(process.env.GITHUB_OUTPUT, `api-url=${url?.href ?? ''}\n`);
