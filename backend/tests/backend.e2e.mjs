@@ -40,6 +40,16 @@ after(async () => {
   await prisma.$disconnect();
 });
 test('HTTP real: salud, validación, autenticación y operaciones monetarias', async t => {
+  await t.test('la raíz de Render abre la aplicación sin redirigir rutas de API', async () => {
+    for (const path of ['/', '/?next=https://example.com']) {
+      const response = await fetch(base + path, { redirect: 'manual' });
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.get('location'), 'https://casino-ia-4e7b6.web.app');
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+    }
+    assert.equal((await request('/api/no-existe')).status, 404);
+    assert.equal((await request('/', { method: 'POST', body: {} })).status, 404);
+  });
   await t.test('health y rutas protegidas', async () => {
     assert.deepEqual(await request('/health'), { status: 200, body: { status: 'ok', db: 'up' } });
     assert.equal((await request('/api/wallet', { auth: false })).status, 401);

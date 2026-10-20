@@ -17,6 +17,32 @@
     }
   ],
   "paths": {
+    "/": {
+      "get": {
+        "summary": "Abre la interfaz del casino en Firebase",
+        "security": [],
+        "responses": {
+          "302": {
+            "description": "Redirección temporal a la aplicación pública",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri",
+                  "const": "https://casino-ia-4e7b6.web.app"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "operationId": "get__health",

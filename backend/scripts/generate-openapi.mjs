@@ -68,6 +68,21 @@ function endpoint(path, method, summary, { input, output, example, status = 200,
     responses: { [status]: response, ...Object.fromEntries([400, 401, 403, 404, 409, 429, 500].map((code) => [code, { description: { 400: 'Datos o regla de negocio inválidos', 401: 'Credenciales ausentes, vencidas o inválidas', 403: 'Acceso denegado', 404: 'Recurso inexistente o ajeno', 409: 'Conflicto de clave, versión o partida activa', 429: 'Límite de solicitudes; respetar Retry-After', 500: 'Fallo inesperado; reconciliar mutaciones antes de reenviar' }[code], content: json(ref('Error')) }])) },
   };
 }
+paths['/'] = {
+  get: {
+    summary: 'Abre la interfaz del casino en Firebase',
+    security: [],
+    responses: {
+      '302': {
+        description: 'Redirección temporal a la aplicación pública',
+        headers: {
+          Location: { schema: { type: 'string', format: 'uri', const: 'https://casino-ia-4e7b6.web.app' } },
+          'Cache-Control': { schema: { type: 'string', const: 'no-store' } },
+        },
+      },
+    },
+  },
+};
 endpoint('/health', 'get', 'Verifica API y DB', { publicRoute: true, output: object({ status: { enum: ['ok', 'degraded'] }, db: { enum: ['up', 'down'] } }) });
 paths['/health'].get.responses['503'] = { description: 'Base no disponible', content: json(object({ status: { const: 'degraded' }, db: { const: 'down' } })) };
 endpoint('/api/auth/register', 'post', 'Crea cuenta y wallet vacía', { input: ref('RegisterInput'), output: object({ publicId: str, email: str, nombre: str, mensaje: str }), status: 201, publicRoute: true });

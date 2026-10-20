@@ -36,6 +36,12 @@ export function buildApp() {
   app.use(express.json({ limit: '100kb' }));
   app.use(limiterGeneral);
 
+  // La entrada pública de Render lleva a la interfaz alojada en Firebase.
+  app.get('/', (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.redirect(302, 'https://casino-ia-4e7b6.web.app');
+  });
+
   // Health check para Render: verifica que la DB responda
   app.get('/health', async (req, res) => {
     try {
