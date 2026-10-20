@@ -89,7 +89,9 @@
 - [ ] Persistencia de sesión mediante refresh seguro con soporte backend, si se requiere.
 - [ ] Telemetría de errores con datos sensibles excluidos.
 - [ ] Historial de juegos con filtros/paginación adicionales si el backend los incorpora.
-- [ ] Panel ADMIN, recuperación de contraseña, pagos reales, IA o multijugador solo con alcance y contratos nuevos.
+- [ ] Panel ADMIN, pagos reales, IA o multijugador solo con alcance y contratos nuevos.
+- [x] Cambio de contraseña autenticado (`POST /api/auth/change-password` + tarjeta «Seguridad» en el perfil): exige la actual, revoca todas las sesiones y obliga a re-loguear.
+- [ ] Recuperación de contraseña (correo de restablecimiento): fuera de alcance; requiere proveedor de email y una dependencia nueva que `AGENTS.md` prohíbe sin aprobación.
 
 ## 8. Evidencia de esta revisión
 

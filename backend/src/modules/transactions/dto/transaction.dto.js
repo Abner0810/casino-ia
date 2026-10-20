@@ -20,10 +20,16 @@ export const withdrawDTO = z.object({
   metodo: z.enum(METODOS).default('simulado'),
 });
 
+// Tolerancia de reloj: el navegador puede ir unos segundos adelantado. Sin
+// ella, elegir "hasta = hoy" o un "desde" reciente se rechazaría por error.
+const SKEW_FUTURO_MS = 5 * 60 * 1000;
+
 export const historyQueryDTO = z.object({
   pagina: z.coerce.number().int().positive().default(1),
   porPagina: z.coerce.number().int().positive().max(100).default(20),
   tipo: z.enum(['DEPOSITO', 'RETIRO', 'APUESTA', 'PREMIO']).optional(),
-  desde: z.string().datetime({ offset: true }).transform((v) => new Date(v)).optional(),
+  desde: z.string().datetime({ offset: true }).transform((v) => new Date(v))
+    .refine((v) => v.getTime() <= Date.now() + SKEW_FUTURO_MS, 'La fecha "desde" no puede estar en el futuro')
+    .optional(),
   hasta: z.string().datetime({ offset: true }).transform((v) => new Date(v)).optional(),
 }).refine((v) => !v.desde || !v.hasta || v.desde <= v.hasta, { message: 'desde no puede ser posterior a hasta', path: ['hasta'] });
