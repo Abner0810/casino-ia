@@ -50,6 +50,7 @@ model User {
   partidas     PartidaBlackjack[]
   rondasPlinko RondaPlinko[]
   refreshTokens RefreshToken[]
+  operations   Operation[]
   createdAt    DateTime         @default(now())
 }
 
@@ -74,6 +75,8 @@ model Movimiento {
   saldoDespues Decimal          @db.Decimal(12,2)
   juego        String? // "plinko" | "blackjack" | null
   descripcion  String
+  operationId  String?
+  operation    Operation? @relation(fields: [operationId], references: [id])
   createdAt    DateTime         @default(now())
 
   @@index([userId, createdAt])
@@ -91,6 +94,7 @@ model PartidaBlackjack {
   resultado  Json? // { dealer: {cartas, total}, manos: [...] } al cerrar
   createdAt  DateTime      @default(now())
   finishedAt DateTime?
+  version    Int @default(0)
 
   @@index([userId, estado])
 }
@@ -114,8 +118,25 @@ model RefreshToken {
   id        String    @id @default(uuid())
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String // sha256 del refresh token opaco
+  tokenHash String @unique // sha256 del refresh token opaco
   expiresAt DateTime
   revokedAt DateTime?
   createdAt DateTime  @default(now())
+
+  @@index([expiresAt])
+}
+
+model Operation {
+  id          String @id @default(uuid())
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  key         String @db.VarChar(128)
+  fingerprint String
+  operation   String
+  status      Int
+  response    Json
+  createdAt   DateTime @default(now())
+  movimientos Movimiento[]
+
+  @@unique([userId, key])
 }

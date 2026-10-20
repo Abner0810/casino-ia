@@ -1,0 +1,37 @@
+{
+  "manifest": {
+    "dependencies": {
+      "@hookform/resolvers": "^5.9.2",
+      "@tanstack/react-query": "^5.104.4",
+      "react": "^19.3.1",
+      "react-dom": "^19.3.1",
+      "react-hook-form": "^7.90.0",
+      "react-router-dom": "^7.18.4",
+      "zod": "^4.6.7"
+    },
+    "devDependencies": {
+      "@eslint/js": "^10.0.1",
+      "@playwright/test": "^1.64.1",
+      "@testing-library/jest-dom": "^7.0.1",
+      "@testing-library/react": "^16.3.3",
+      "@testing-library/user-event": "^14.6.8",
+      "@types/node": "^26.6.5",
+      "@types/react": "^19.3.0",
+      "@types/react-dom": "^19.3.0",
+      "@vitejs/plugin-react": "^6.1.2",
+      "eslint": "^10.13.0",
+      "eslint-plugin-react-hooks": "^7.1.1",
+      "eslint-plugin-react-refresh": "^0.5.7",
+      "globals": "^17.13.0",
+      "jsdom": "^29.1.1",
+      "typescript": "^6.0.3",
+      "typescript-eslint": "^8.71.2",
+      "vite": "^8.3.4",
+      "vitest": "^5.0.5"
+    },
+    "engines": {
+      "node": ">=22.12"
+    }
+  },
+  "lockSha256": "aabb093e089471d6064a1cd663735dbf6dc2e0a7a4bb63512554775a6ed1780a"
+}

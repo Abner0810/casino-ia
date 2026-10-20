@@ -6,7 +6,7 @@ export const historial = (userId, where, pagina, porPagina) =>
   prisma.$transaction([
     prisma.movimiento.findMany({
       where: { userId, ...where },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       skip: (pagina - 1) * porPagina,
       take: porPagina,
       select: {
@@ -21,4 +21,4 @@ export const historial = (userId, where, pagina, porPagina) =>
       },
     }),
     prisma.movimiento.count({ where: { userId, ...where } }),
-  ]);
+  ], { isolationLevel: 'RepeatableRead' });

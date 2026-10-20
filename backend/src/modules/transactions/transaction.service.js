@@ -5,7 +5,7 @@
 // candado lógico: si dos retiros simultáneos compiten, solo uno pasa
 // y el otro recibe 400 sin tocar nada (atomicidad sin SELECT FOR UPDATE).
 
-import { prisma } from '../../shared/prisma.client.js';
+import { userTransaction } from '../../shared/transaction.js';
 import { ApiError } from '../../shared/ApiError.js';
 import { toDecimal, toNumber } from '../../shared/utils/money.js';
 import { acreditar, debitar } from '../../shared/utils/ledger.js';
@@ -14,7 +14,7 @@ import * as repo from './transaction.repository.js';
 export async function depositar(userId, { monto, metodo }) {
   const montoDec = toDecimal(monto);
 
-  const saldoFinal = await prisma.$transaction(async (tx) => {
+  const saldoFinal = await userTransaction(userId, async (tx) => {
     return acreditar(
       tx,
       userId,
@@ -34,7 +34,7 @@ export async function depositar(userId, { monto, metodo }) {
 export async function retirar(userId, { monto, metodo }) {
   const montoDec = toDecimal(monto);
 
-  const saldoFinal = await prisma.$transaction(async (tx) => {
+  const saldoFinal = await userTransaction(userId, async (tx) => {
     return debitar(
       tx,
       userId,

@@ -1,0 +1,14 @@
+node_modules
+.git
+.env
+.env.*
+**/.env
+**/.env.*
+*.log
+coverage
+dist
+.DS_Store
+docker-compose*.yml
+compose*.yaml
+Dockerfile
+.dockerignore

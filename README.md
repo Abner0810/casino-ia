@@ -1,5 +1,10 @@
 # 🎰 Casino API — Simulador Plinko + Blackjack
 
+El repositorio incluye ahora la SPA en [`frontend/`](frontend/README.md),
+con Firebase Hosting, CI/CD y agentes especializados para Codex/OpenCode.
+Consulta la [comparación con dev y pendientes reales](ai-context/comparacion-frontend.md)
+y la [guía de agentes y hooks](docs/agentes.md).
+
 API REST de un simulador de casino con dos juegos: **Plinko** (apuestas pequeñas, medianas y grandes) y **Blackjack** (split, doblar apuesta, rendición).
 
 ## Stack
@@ -67,27 +72,13 @@ dev  ──push──▶  CI tests automáticos (GitHub Actions)
 | `qa` | Los mismos tests + pruebas manuales de QA de tus amigos |
 | `main` | Tests primero (gate) y **si pasan**, `deploy.yml` dispara el deploy en Render vía su API |
 
-Para que el deploy automático funcione, configura estos **secrets** en GitHub
-(`Settings → Secrets and variables → Actions`):
-
-| Secret | Valor |
-|---|---|
-| `RENDER_API_KEY` | Render → Account Settings → API Keys → Create API Key |
-| `RENDER_SERVICE_ID` | El ID de tu servicio web, en su página (`svc-xxxxxxxx`) |
-
-> Si prefieres el auto-deploy nativo de Render (sin API key), conecta el repo en
-> Render → Service → Settings → Build & Deploy → *Auto Deploy: push to `main`*.
-> Son alternativas: usa una sola.
+El workflow usa el secreto existente `RENDER_DEPLOY_HOOK_URL`. Despliega el SHA validado con `ref` y espera que `/health` confirme ese mismo commit en Render. Consulta [backend/DEPLOY.md](backend/DEPLOY.md).
 
 ## Deploy en Render
 
-1. Crea una **PostgreSQL 18** en Render (elegir versión 18) y copia `DATABASE_URL` y `DIRECT_URL`.
-2. Crea un **Web Service** apuntando a este repo. El `render.yaml` de la raíz ya configura:
-   - Build: `npm install && npx prisma generate && npx prisma migrate deploy`
-   - Start: `node src/server.js`
-   - Health check: `/health`
-3. Configura en variables de entorno: `DATABASE_URL`, `DIRECT_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGINS=https://tu-proyecto.web.app`.
-4. El frontend (React) se deploya en Firebase Hosting apuntando a la URL de Render.
+El backend usa el gate de GitHub Actions: unit tests primero y E2E con PostgreSQL 18 despues. Render mantiene Auto Deploy en Off. El workflow permite push a `main` o ejecucion manual desde Actions sobre `main` o `backend/polish-render` y verifica el commit y `/health` antes de finalizar.
+
+La configuracion, secretos y alternativa manual estan en [backend/DEPLOY.md](backend/DEPLOY.md). El build usa `npm ci && npm run build && npm run migrate:deploy`, Node 22 y `backend` como directorio raiz.
 
 ## Seguridad implementada
 
