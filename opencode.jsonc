@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [".opencode/reglas-frontend.md", "ai-context/planfrontend.md"],
+  "permission": {
+    "edit": {
+      "*": "allow",
+      "**/package-lock.json": "deny",
+      "**/.env": "deny",
+      "**/.env.local": "deny"
+    }
+  }
+}

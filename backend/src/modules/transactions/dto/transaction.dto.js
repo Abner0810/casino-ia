@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const METODOS = ['tarjeta', 'transferencia', 'crypto', 'simulado'];
+const METODOS = ['simulado'];
 
 export const depositDTO = z.object({
   monto: z
@@ -17,13 +17,13 @@ export const withdrawDTO = z.object({
     .positive('El monto debe ser positivo')
     .max(1_000_000, 'El monto máximo por retiro es 1,000,000')
     .refine((v) => /^\d+(\.\d{1,2})?$/.test(String(v)), 'El monto admite máximo 2 decimales'),
-  metodo: z.enum(METODOS).default('transferencia'),
+  metodo: z.enum(METODOS).default('simulado'),
 });
 
 export const historyQueryDTO = z.object({
   pagina: z.coerce.number().int().positive().default(1),
   porPagina: z.coerce.number().int().positive().max(100).default(20),
   tipo: z.enum(['DEPOSITO', 'RETIRO', 'APUESTA', 'PREMIO']).optional(),
-  desde: z.coerce.date().optional(),
-  hasta: z.coerce.date().optional(),
-});
+  desde: z.string().datetime({ offset: true }).transform((v) => new Date(v)).optional(),
+  hasta: z.string().datetime({ offset: true }).transform((v) => new Date(v)).optional(),
+}).refine((v) => !v.desde || !v.hasta || v.desde <= v.hasta, { message: 'desde no puede ser posterior a hasta', path: ['hasta'] });

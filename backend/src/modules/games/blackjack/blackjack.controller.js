@@ -35,3 +35,6 @@ export const salir = manejar(async (req, res) => {
 export const ultimasPartidas = manejar(async (req, res) => {
   res.json({ items: await service.ultimasPartidas(req.user.id) });
 });
+
+export const activa = manejar(async (req, res) => res.json(await service.activa(req.user.id)));
+export const consultar = manejar(async (req, res) => res.json(await service.consultar(req.user.id, req.params.id)));

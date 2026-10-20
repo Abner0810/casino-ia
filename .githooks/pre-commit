@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+node scripts/githooks-pre-commit.mjs "$(git rev-parse --git-path COMMIT_EDITMSG)"
+node backend/scripts/check.mjs --staged

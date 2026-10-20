@@ -1,0 +1,74 @@
+name: Firebase Hosting
+
+on:
+  push:
+    branches: [main, qa]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: firebase-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  configuration:
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/qa'
+    runs-on: ubuntu-latest
+    outputs:
+      api-url: ${{ steps.config.outputs.api-url }}
+    steps:
+      - id: config
+        name: Validar configuración pública y credencial CI
+        env:
+          VITE_API_URL: ${{ github.ref == 'refs/heads/qa' && vars.VITE_API_URL_QA || vars.VITE_API_URL || 'https://casino-ia-9llp.onrender.com/api' }}
+          FIREBASE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CASINO_IA }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFileSync } from 'node:fs';
+          const raw = process.env.VITE_API_URL?.trim();
+          const url = raw ? new URL(raw) : null;
+          if (url && (url.protocol !== 'https:' || !url.pathname.endsWith('/api') || /TU-BACKEND|localhost|127\.0\.0\.1/i.test(raw))) throw new Error('VITE_API_URL debe apuntar al backend público HTTPS y terminar en /api.');
+          if (!url) throw new Error('VITE_API_URL es obligatoria para publicar cuentas y juegos conectados.');
+          const account = JSON.parse(process.env.FIREBASE_ACCOUNT || '{}');
+          if (account.project_id !== 'casino-ia-4e7b6' || !account.private_key || !account.client_email) throw new Error('Configura FIREBASE_SERVICE_ACCOUNT_CASINO_IA con la cuenta de servicio del proyecto casino-ia-4e7b6.');
+          appendFileSync(process.env.GITHUB_OUTPUT, `api-url=${url?.href ?? ''}\n`);
+          NODE
+  checks:
+    needs: configuration
+    uses: ./.github/workflows/frontend-ci.yml
+    with:
+      api-url: ${{ needs.configuration.outputs.api-url }}
+  backend:
+    needs: configuration
+    uses: ./.github/workflows/backend-checks.yml
+  deploy:
+    needs: [checks, backend]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'qa' }}
+      url: ${{ steps.hosting.outputs.details_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+      - id: hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CASINO_IA }}
+          projectId: casino-ia-4e7b6
+          entryPoint: frontend
+          channelId: ${{ github.ref == 'refs/heads/main' && 'live' || 'qa' }}
+          expires: 7d
+      - name: Registrar enlace y versión publicada
+        env:
+          DEPLOY_URL: ${{ steps.hosting.outputs.details_url }}
+        run: |
+          echo "### Frontend publicado" >> "$GITHUB_STEP_SUMMARY"
+          echo "[$DEPLOY_URL]($DEPLOY_URL)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $GITHUB_SHA · Rama: $GITHUB_REF_NAME" >> "$GITHUB_STEP_SUMMARY"
