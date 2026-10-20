@@ -10,6 +10,4 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
 done
 
-cd backend
-node scripts/check.mjs
-npm run test:unit
+node scripts/agent-policy.mjs --release

@@ -35,7 +35,7 @@ jobs:
         working-directory: .
         run: |
           node scripts/agent-policy.mjs
-          node --test scripts/agent-policy.test.mjs
+          node --test scripts/agent-policy.test.mjs scripts/githooks.test.mjs
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
