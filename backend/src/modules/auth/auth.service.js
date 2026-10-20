@@ -137,3 +137,19 @@ export async function logout(refreshToken, userId) {
   // Respuesta idéntica exista o no el token: no se filtra información
   return { mensaje: 'Sesión cerrada correctamente' };
 }
+
+// Cambio de contraseña autenticado. Verifica la actual con bcrypt, rehashea a
+// 12 y revoca TODAS las sesiones (incluida la actual): el cliente debe volver
+// a iniciar sesión. Si la actual no coincide → 401 sin tocar nada.
+export async function changePassword(userId, { passwordActual, passwordNueva }) {
+  const user = await repo.findById(userId);
+  if (!user) throw new ApiError(401, 'No autorizado');
+
+  const actualValida = await bcrypt.compare(passwordActual, user.passwordHash);
+  if (!actualValida) throw new ApiError(401, 'La contraseña actual no es correcta');
+
+  const passwordHash = await bcrypt.hash(passwordNueva, BCRYPT_SALT_ROUNDS);
+  await repo.actualizarPasswordHash(userId, passwordHash);
+
+  return { mensaje: 'Contraseña actualizada. Inicia sesión de nuevo con la nueva contraseña.' };
+}

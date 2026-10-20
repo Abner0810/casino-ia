@@ -29,14 +29,24 @@ Cuatro reglas, aplicadas en tres capas con la misma política (`scripts/agent-po
 | 1 | No pushear a main: el git flow exige PR (dev → qa → main) | `pre-push` lee los refs de stdin y aborta si el destino es `refs/heads/main` | `evaluateOperation` deniega `git push` con destino main (`origin main`, `HEAD:main`, `dev:main`) |
 | 2 | Archivos sensibles o pesados, con o sin gitignore | `pre-commit` revisa paths en el índice y tamaños > 1 MB | Se deniega escritura sobre `.env` reales, `node_modules`, `dist`, `build`, `coverage`, llaves, credenciales y binarios |
 | 3A | Secretos por contenido: patrones concretos (clave privada, tokens AWS/GitHub, JWT firmado y valores reales de las variables sensibles del proyecto) | `pre-commit` escanea el diff en el índice | Se escanea el texto de comandos y ediciones |
-| 3C | Convención de commits: `tipo(scope): mensaje` | `pre-commit` valida el primer renglón de COMMIT_EDITMSG | Se valida `git commit -m` |
+| 3C | Convención de commits: `tipo(scope): mensaje` | `commit-msg` valida el primer renglón del archivo que Git entrega como argumento | Se valida `git commit -m` |
+| QA | Integridad y verificaciones antes de publicar | `pre-push` ejecuta `node scripts/agent-policy.mjs --release` desde raíz | La misma verificación antes de `git push` o `firebase deploy`, también con ejecutables `.cmd` de Windows |
 
 Excepciones de la regla 3A: archivos `.example`, `*.test.*`/`*.spec.*`, directorios
 `tests/`, marcadores de ejemplo (`<...>`, `${...}`, `...`, `TU-`, `cambia-`, `REEMPLAZAR`,
 `ci-access-secret`, `casino_test:casino_test@localhost`, entre otros) y asignaciones de
-variables en código. Los mensajes generados por git (`Merge`, `Revert`, `fixup!`) y los
-escapes `--amend`/`--no-verify` pasan sin convención. No se valida `password:` genérico
+variables en código. Los mensajes generados por git (`Merge`, `Revert`, `fixup!`)
+se permiten sin convención. `--amend` no se comprueba anticipadamente por el agente, pero el hook `commit-msg`
+sí valida el mensaje final. Git permite omitir sus hooks con `--no-verify`.
+No se valida `password:` genérico
 para no bloquear validadores legítimos de auth.
+
+`pre-commit` solo revisa archivos staged y sintaxis backend; no lee COMMIT_EDITMSG,
+que puede no existir o contener un mensaje anterior en esa fase. `commit-msg`
+valida el mensaje actual, también en el primer commit y con `git commit -F`.
+El reconocimiento de comandos admite nombres Windows (`npm.cmd`, `firebase.cmd`,
+`git.exe`) y rutas entre comillas. `npm.cmd ci` sigue permitido; instalar o cambiar
+dependencias sigue bloqueado.
 
 Los hooks de Codex viven en `.codex/hooks.json`; SessionStart verifica ambas baselines y
 añade contexto. PreToolUse aplica estas reglas antes de cada herramienta. El plugin
@@ -56,12 +66,24 @@ No regenerarlas para ocultar cambios de dependencias. Desde la raíz del reposit
 ```sh
 node scripts/agent-policy.mjs
 node --test scripts/agent-policy.test.mjs
+node --test scripts/githooks.test.mjs
 node scripts/agent-policy.mjs --release
 ```
 
 `--release` verifica ambas baselines, typecheck/lint/test/build de frontend y
-check/test:unit de backend. Los git hooks se instalan con `npm run hooks:install`
-(`git config core.hooksPath .githooks`); en Windows los ejecuta Git for Windows.
+check/test:unit de backend. `pre-push` utiliza esa función sin repetir por separado
+las tareas backend. Un fallo de cualquier paso bloquea el push y conserva el remoto.
+No publica por sí mismo ni ejecuta pruebas contra bases de producción.
+
+Los git hooks se instalan desde raíz con `npm.cmd --prefix backend run hooks:install`
+en Windows (en otros sistemas, `npm --prefix backend run hooks:install`).
+Confirmar con `git config --local --get core.hooksPath`: debe devolver `.githooks`.
+En Windows los ejecuta Git for Windows. La instalación es local por checkout;
+tener los archivos versionados no activa por sí mismo esta configuración.
+
+Las pruebas de `githooks.test.mjs` usan repositorios temporales y un remoto bare
+local: comprueban commits reales y que pre-push detenga una publicación cuando
+falla frontend, sin contactar GitHub ni modificar el repositorio de trabajo.
 
 Los hooks no son una frontera de seguridad: scripts arbitrarios pueden escribir archivos,
 otros comandos pueden publicar y una sesión sin hooks activos no ejecuta esta política.

@@ -56,7 +56,9 @@ export async function historial(userId, { pagina, porPagina, tipo, desde, hasta 
   if (tipo) where.tipo = tipo;
   if (desde || hasta) {
     where.createdAt = {};
-    if (desde) where.createdAt.gte = desde;
+    // Defensa en profundidad: acotar 'desde' al presente (con tolerancia de
+    // reloj) evita rangos cuyo inicio es futuro aunque el DTO lo permitiese.
+    if (desde) where.createdAt.gte = new Date(Math.min(desde.getTime(), Date.now()));
     if (hasta) where.createdAt.lte = hasta;
   }
 

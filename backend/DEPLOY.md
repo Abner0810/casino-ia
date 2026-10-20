@@ -2,6 +2,9 @@
 
 Servicio de produccion: https://casino-ia-9llp.onrender.com
 
+Abrir `/` redirige con HTTP 302 a https://casino-ia-4e7b6.web.app.
+La API conserva sus rutas `/api/*`; `/health` sigue comprobando API y base de datos.
+
 Render usa `backend` como Root Directory, Node 22 y el build
 `npm ci && npm run build && npm run migrate:deploy`. Configurar las variables
 DATABASE_URL, DIRECT_URL, secretos JWT independientes de al menos 32 caracteres
