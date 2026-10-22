@@ -6,7 +6,7 @@ recibidos de `frontmedias`; las mejoras de backend se integraron desde `origin/d
 
 ## Desarrollo
 
-Usar Node 22.12+ y las dependencias fijadas:
+Usar Node 22.23.4 (ver `.nvmrc` en la raíz) y las dependencias fijadas:
 
 ```powershell
 cd frontend
