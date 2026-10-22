@@ -1,5 +1,5 @@
 # 🎰 Casino API — Simulador Plinko + Blackjack
-
+hola
 El repositorio incluye ahora la SPA en [`frontend/`](frontend/README.md),
 con Firebase Hosting, CI/CD y agentes especializados para Codex/OpenCode.
 Consulta la [comparación con dev y pendientes reales](ai-context/comparacion-frontend.md)
