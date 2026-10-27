@@ -205,8 +205,17 @@ export default function PlinkoPage() {
     enviando.current = true
     try {
       const operacion = await consultarOperacion<ResultadoPlinko>(claveIncierta.current)
-      setResultado(operacion.response)
-      setPaso(PLINKO_FILAS)
+      const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const nuevaBola: BolaAnimada = {
+        id,
+        resultado: operacion.response,
+        paso: PLINKO_FILAS,
+        animando: false,
+        finalizada: true,
+      }
+      setBolas((prev) => [...prev, nuevaBola])
+      saldoInvalidadoRef.current = false
+      totalBolasRef.current = (totalBolasRef.current || 0) + 1
       invalidarDatosDeDinero(queryClient)
       await Promise.all([refetch(), rondas.refetch()])
       setIncierto(false)
