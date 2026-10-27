@@ -17,6 +17,15 @@ import estilos from './PlinkoPage.module.css'
 
 // Duración de cada uno de los 9 pasos de la bola (coincide con la transición del CSS).
 const PASO_MS = 220
+const MAX_BOLAS = 20
+
+type BolaAnimada = {
+  id: string
+  resultado: ResultadoPlinko
+  paso: number
+  animando: boolean
+  finalizada: boolean
+}
 
 function esSaldoInsuficiente(error: ApiError | null): boolean {
   return Boolean(error && error.status === 400 && /saldo insuficiente/i.test(error.mensaje))
@@ -33,19 +42,22 @@ export default function PlinkoPage() {
   const [riesgo, setRiesgo] = useState<Riesgo | null>(null)
   const [texto, setTexto] = useState('')
   const [tocado, setTocado] = useState(false)
-  const [resultado, setResultado] = useState<ResultadoPlinko | null>(null)
-  const [paso, setPaso] = useState(0)
-  const [animando, setAnimando] = useState(false)
+  const [bolas, setBolas] = useState<BolaAnimada[]>([])
+  const [cantidadBolas, setCantidadBolas] = useState(1)
+  const [enviandoLote, setEnviandoLote] = useState(false)
   const [incierto, setIncierto] = useState(false)
   const enviando = useRef(false)
   const claveIncierta = useRef<string | undefined>(undefined)
+  const bolasFinalizadasRef = useRef(0)
+  const totalBolasRef = useRef(0)
+  const saldoInvalidadoRef = useRef(false)
 
   const accesoPlinko = acceso && acceso.juego === 'plinko' ? acceso : null
   const riesgos = accesoPlinko?.riesgos ?? []
   const riesgoSeleccionado: Riesgo = riesgo ?? riesgos[0]?.riesgo ?? 'PEQUENO'
   const configRiesgo = riesgos.find((r) => r.riesgo === riesgoSeleccionado) ?? null
   // El tablero pinta el riesgo con el que se apostó; antes de apostar, el elegido.
-  const riesgoTablero = resultado?.riesgo ?? riesgoSeleccionado
+  const riesgoTablero = bolas.length > 0 ? bolas[bolas.length - 1].resultado.riesgo ?? riesgoSeleccionado : riesgoSeleccionado
 
   const errorApuesta = useMemo(() => {
     const base = validarMontoTexto(texto)
@@ -58,59 +70,134 @@ export default function PlinkoPage() {
     if (valor > configRiesgo.apuestaMaxima) {
       return `La apuesta máxima para el riesgo ${ETIQUETA_RIESGO[riesgoSeleccionado]} es ${formatearDinero(configRiesgo.apuestaMaxima)}`
     }
+    const cantidad = Math.max(1, Math.min(MAX_BOLAS, cantidadBolas || 1))
+    if (valor * cantidad > accesoPlinko!.saldo) {
+      return `Saldo insuficiente para apostar ${cantidad} ${cantidad === 1 ? 'bola' : 'bolas'} con este monto.`
+    }
     return null
-  }, [texto, configRiesgo, riesgoSeleccionado])
+  }, [texto, configRiesgo, riesgoSeleccionado, cantidadBolas, accesoPlinko])
 
-  // Animación fiel paso a paso: solo al terminar se anuncia el resultado.
+  // Animación fiel paso a paso para cada bola
   useEffect(() => {
-    if (!animando || !resultado) return
-    let actual = 0
-    const id = window.setInterval(() => {
-      actual += 1
-      setPaso(actual)
-      if (actual >= PLINKO_FILAS) {
-        window.clearInterval(id)
-        setAnimando(false)
-      }
-    }, PASO_MS)
-    return () => window.clearInterval(id)
-  }, [animando, resultado])
+    const intervalos = new Map<string, number>()
+    bolas.forEach((bola) => {
+      if (!bola.animando || bola.finalizada) return
+      let actual = bola.paso
+      const id = window.setInterval(() => {
+        actual += 1
+        setBolas((prev) =>
+          prev.map((b) =>
+            b.id === bola.id
+              ? {
+                  ...b,
+                  paso: actual,
+                  animando: actual < PLINKO_FILAS,
+                  finalizada: actual >= PLINKO_FILAS,
+                }
+              : b,
+          ),
+        )
+        if (actual >= PLINKO_FILAS) {
+          window.clearInterval(id)
+          intervalos.delete(bola.id)
+        }
+      }, PASO_MS)
+      intervalos.set(bola.id, id)
+    })
+    return () => {
+      intervalos.forEach((id) => window.clearInterval(id))
+    }
+  }, [bolas])
 
-  const bloqueado = apostar.isPending || animando || incierto
+  // Cuando todas las bolas finalicen, invalidar saldo una sola vez
+  useEffect(() => {
+    if (bolas.length === 0 || saldoInvalidadoRef.current) return
+    const todasFinalizadas = bolas.every((b) => b.finalizada)
+    if (todasFinalizadas && totalBolasRef.current === bolas.length && !enviandoLote) {
+      saldoInvalidadoRef.current = true
+      void invalidarDatosDeDinero(queryClient)
+      void Promise.all([refetch(), rondas.refetch()])
+    }
+  }, [bolas, enviandoLote, queryClient, refetch, rondas])
+
+  const bolasActivas = bolas.some((b) => b.animando)
+  const bloqueado = apostar.isPending || bolasActivas || enviandoLote || incierto
   const errorAcceso = error instanceof ApiError ? error : null
   const errorMutacion = apostar.error instanceof ApiError ? apostar.error : null
-  const anuncio =
-    resultado && !animando
-      ? `Resultado: ${formatearMultiplicador(resultado.multiplicador)}. Retorno bruto ${formatearDinero(resultado.ganancia)}. Resultado neto ${formatearDinero(resultado.gananciaNeta)}. Saldo confirmado ${formatearDinero(resultado.saldoActual)}.`
-      : ''
 
-  function enviarApuesta() {
+  const ultimaBola = bolas.length > 0 && !bolasActivas ? bolas[bolas.length - 1] : null
+  const anuncio =
+    ultimaBola && ultimaBola.finalizada && bolas.length === 1
+      ? `Resultado: ${formatearMultiplicador(ultimaBola.resultado.multiplicador)}. Retorno bruto ${formatearDinero(ultimaBola.resultado.ganancia)}. Resultado neto ${formatearDinero(ultimaBola.resultado.gananciaNeta)}. Saldo confirmado ${formatearDinero(ultimaBola.resultado.saldoActual)}.`
+      : bolas.length > 0 && !bolasActivas
+        ? `Se completaron ${bolas.length} ${bolas.length === 1 ? 'bola' : 'bolas'}. Revisa los resultados y el saldo actualizado.`
+        : ''
+
+  async function enviarApuesta() {
     if (bloqueado || enviando.current || !configRiesgo || errorApuesta) return
+    const cantidad = Math.max(1, Math.min(MAX_BOLAS, cantidadBolas || 1))
     enviando.current = true
-    setResultado(null)
-    apostar.mutate(
-      { apuesta: montoATexto(texto), riesgo: riesgoSeleccionado },
-      {
-        onError: (error) => {
-          if (error instanceof ApiError && (error.esRed || error.status >= 500)) {
-            claveIncierta.current = error.operationKey
-            setIncierto(true)
+    setEnviandoLote(true)
+    saldoInvalidadoRef.current = false
+    bolasFinalizadasRef.current = 0
+    totalBolasRef.current = cantidad
+    setBolas([])
+    setTocado(true)
+
+    const monto = montoATexto(texto)
+    const nuevasBolas: BolaAnimada[] = []
+
+    // Enviar en lotes pequeños para no sobrecargar
+    const batchSize = 4
+    for (let i = 0; i < cantidad; i += batchSize) {
+      const lote = []
+      for (let j = 0; j < batchSize && i + j < cantidad; j++) {
+        lote.push(
+          apostar.mutateAsync({ apuesta: monto, riesgo: riesgoSeleccionado }).catch((error) => {
+            if (error instanceof ApiError && (error.esRed || error.status >= 500)) {
+              claveIncierta.current = error.operationKey
+              setIncierto(true)
+            }
+            throw error
+          }),
+        )
+      }
+      try {
+        const resultados = await Promise.allSettled(lote)
+        for (const res of resultados) {
+          if (res.status === 'fulfilled') {
+            const data = res.value
+            const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            nuevasBolas.push({
+              id,
+              resultado: data,
+              paso: 0,
+              animando: !reducido,
+              finalizada: reducido,
+            })
           }
-        },
-        onSettled: () => { enviando.current = false },
-        onSuccess: (data) => {
-          setResultado(data)
-          if (reducido) {
-            // Sin animación: se muestra directamente el resultado final.
-            setPaso(PLINKO_FILAS)
-            setAnimando(false)
-          } else {
-            setPaso(0)
-            setAnimando(true)
-          }
-        },
-      },
-    )
+          // Si falla, no agregamos bola pero continuamos con las demás
+        }
+        setBolas([...nuevasBolas])
+      } catch {
+        // Continuar con siguiente lote
+      }
+      // Pequeña pausa entre lotes para no sobrecargar
+      if (i + batchSize < cantidad) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+    }
+
+    if (reducido && nuevasBolas.length > 0) {
+      nuevasBolas.forEach((_, idx) => {
+        setBolas((prev) =>
+          prev.map((b, i) => (i === idx ? { ...b, paso: PLINKO_FILAS, animando: false, finalizada: true } : b)),
+        )
+      })
+    }
+
+    enviando.current = false
+    setEnviandoLote(false)
   }
 
   async function reconciliar() {
@@ -183,7 +270,7 @@ export default function PlinkoPage() {
 
       <div className={estilos.disposicion}>
         <div className={estilos.tableroEnvoltura}>
-          <Tablero riesgo={riesgoTablero} multiplicadores={configuracion.data?.riesgos.find((opcion) => opcion.riesgo === riesgoTablero)?.multiplicadores ?? []} ruta={resultado?.ruta ?? null} paso={paso} />
+          <Tablero riesgo={riesgoTablero} multiplicadores={configuracion.data?.riesgos.find((opcion) => opcion.riesgo === riesgoTablero)?.multiplicadores ?? []} bolas={bolas.map((b) => ({ ruta: b.resultado.ruta, paso: b.paso }))} />
           <p className={estilos.tableroPie}>
             Riesgo mostrado: <strong>{ETIQUETA_RIESGO[riesgoTablero]}</strong>
           </p>
@@ -228,12 +315,12 @@ export default function PlinkoPage() {
             onSubmit={(evento) => {
               evento.preventDefault()
               setTocado(true)
-              enviarApuesta()
+              void enviarApuesta()
             }}
             noValidate
           >
             <Input
-              etiqueta="Apuesta"
+              etiqueta="Apuesta por bola"
               inputMode="decimal"
               autoComplete="off"
               placeholder="0.00"
@@ -243,6 +330,16 @@ export default function PlinkoPage() {
               disabled={bloqueado}
               error={tocado ? (errorApuesta ?? undefined) : undefined}
             />
+            <Input
+              etiqueta={`Cantidad de bolas (máx. ${MAX_BOLAS})`}
+              type="number"
+              min={1}
+              max={MAX_BOLAS}
+              inputMode="numeric"
+              value={cantidadBolas}
+              onChange={(evento) => setCantidadBolas(Number(evento.target.value))}
+              disabled={bloqueado}
+            />
             {configRiesgo && (
               <p className={estilos.ayuda}>
                 Rango permitido: {formatearDinero(configRiesgo.apuestaMinima)} –{' '}
@@ -250,8 +347,8 @@ export default function PlinkoPage() {
                 <Money valor={acceso.saldo} />
               </p>
             )}
-            <Button type="submit" ancho cargando={apostar.isPending} disabled={bloqueado || Boolean(errorApuesta) || !texto.trim()}>
-              {animando ? 'La bola está en juego…' : 'Apostar'}
+            <Button type="submit" ancho cargando={enviandoLote} disabled={bloqueado || Boolean(errorApuesta) || !texto.trim()}>
+              {bolasActivas ? 'Bolas en juego…' : enviandoLote ? 'Lanzando bolas…' : 'Lanzar bolas'}
             </Button>
           </form>
 
@@ -275,33 +372,19 @@ export default function PlinkoPage() {
             </Alert>
           )}
 
-          {resultado && !animando && (
+          {!bolasActivas && bolas.length > 0 && (
             <div className={estilos.resultado}>
-              <h2 className={estilos.panelTitulo}>Resultado</h2>
-              <dl className={estilos.datos}>
-                <div className={estilos.dato}>
-                  <dt>Multiplicador</dt>
-                  <dd>{formatearMultiplicador(resultado.multiplicador)}</dd>
-                </div>
-                <div className={estilos.dato}>
-                  <dt>Retorno bruto</dt>
-                  <dd>
-                    <Money valor={resultado.ganancia} />
-                  </dd>
-                </div>
-                <div className={estilos.dato}>
-                  <dt>Resultado neto</dt>
-                  <dd>
-                    <Money valor={resultado.gananciaNeta} colorearSigno />
-                  </dd>
-                </div>
-                <div className={estilos.dato}>
-                  <dt>Saldo confirmado</dt>
-                  <dd>
-                    <Money valor={resultado.saldoActual} />
-                  </dd>
-                </div>
-              </dl>
+              <h2 className={estilos.panelTitulo}>Resultados ({bolas.length})</h2>
+              <ul className={estilos.listaResultados}>
+                {bolas.map((bola, idx) => (
+                  <li key={bola.id} className={estilos.resultadoItem}>
+                    <div>
+                      <strong>Bola {idx + 1}</strong> · {formatearMultiplicador(bola.resultado.multiplicador)} · Neto{' '}
+                      <Money valor={bola.resultado.gananciaNeta} colorearSigno />
+                    </div>
+                  </li>
+                ))}
+              </ul>
               <p className={estilos.nota}>
                 Un retorno bruto positivo no implica ganancia neta positiva: el resultado neto ya descuenta tu apuesta.
               </p>
