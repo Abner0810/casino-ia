@@ -96,10 +96,10 @@ test('registro, login, recarga, Plinko, movimientos, retiro rechazado y logout',
   await page.getByRole('link', { name: 'Juegos', exact: true }).click()
   await page.getByRole('link', { name: /Plinko|tablero/i }).first().click()
   await expect(page.getByRole('heading', { name: 'Plinko', exact: true })).toBeVisible()
-  await page.getByLabel('Apuesta', { exact: true }).fill('10')
-  await page.getByRole('button', { name: 'Apostar', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Resultado', exact: true })).toBeVisible()
-  await expect(page.getByText('Retorno bruto', { exact: true })).toBeVisible()
+  await page.getByLabel('Apuesta por bola', { exact: true }).fill('10')
+  await page.getByRole('button', { name: 'Lanzar bolas', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Resultados (1)', exact: true })).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Bola 1' })).toContainText('Neto')
   await page.getByRole('link', { name: 'Movimientos', exact: true }).click()
   await expect(page.getByText('Operación simulada QA', { exact: true })).toBeVisible()
   await page.getByLabel('Tipo', { exact: true }).selectOption('DEPOSITO')
@@ -110,6 +110,20 @@ test('registro, login, recarga, Plinko, movimientos, retiro rechazado y logout',
   await expect(page.getByText('Saldo insuficiente', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Cerrar sesión' }).click()
   await expect(page).toHaveURL(/\/login$/)
+})
+
+test('plinko lanza varias bolas y actualiza el saldo al terminar', async ({ page }) => {
+  await login(page)
+  await page.getByRole('link', { name: 'Juegos', exact: true }).click()
+  await page.getByRole('link', { name: /Plinko|tablero/i }).first().click()
+  await expect(page.getByRole('heading', { name: 'Plinko', exact: true })).toBeVisible()
+  await page.getByLabel('Apuesta por bola', { exact: true }).fill('10')
+  await page.getByLabel(/Cantidad de bolas/).fill('3')
+  await page.getByRole('button', { name: 'Lanzar bolas', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Resultados (3)', exact: true })).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Neto' })).toHaveCount(3)
+  // 100 de saldo inicial - 3 bolas de 10 con retorno del 50% = 85.
+  await expect(page.getByText('Saldo de simulación', { exact: true }).locator('..')).toContainText('85.00')
 })
 
 test('rutas privadas y sesión en memoria', async ({ page }) => {
