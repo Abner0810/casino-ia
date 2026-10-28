@@ -1,5 +1,5 @@
 # 🎰 Casino API — Simulador Plinko + Blackjack
-
+hola
 El repositorio incluye ahora la SPA en [`frontend/`](frontend/README.md),
 con Firebase Hosting, CI/CD y agentes especializados para Codex/OpenCode.
 Consulta la [comparación con dev y pendientes reales](ai-context/comparacion-frontend.md)
@@ -9,7 +9,7 @@ API REST de un simulador de casino con dos juegos: **Plinko** (apuestas pequeña
 
 ## Stack
 
-- **Node.js 22+ / Express 5** — API REST por capas
+- **Node.js 22.23.4 / Express 5** — API REST por capas
 - **PostgreSQL 18 + Prisma 6** — datos y ORM (patrón repository)
 - **Zod** — validación de DTOs y variables de entorno
 - **JWT** (access 30min + refresh 7d con rotación) — autenticación
@@ -78,7 +78,7 @@ El workflow usa el secreto existente `RENDER_DEPLOY_HOOK_URL`. Despliega el SHA 
 
 El backend usa el gate de GitHub Actions: unit tests primero y E2E con PostgreSQL 18 despues. Render mantiene Auto Deploy en Off. El workflow permite push a `main` o ejecucion manual desde Actions sobre `main` o `backend/polish-render` y verifica el commit y `/health` antes de finalizar.
 
-La configuracion, secretos y alternativa manual estan en [backend/DEPLOY.md](backend/DEPLOY.md). El build usa `npm ci && npm run build && npm run migrate:deploy`, Node 22 y `backend` como directorio raiz.
+La configuracion, secretos y alternativa manual estan en [backend/DEPLOY.md](backend/DEPLOY.md). El build comprueba Node 22.23.4 y usa `npm ci && npm run build && npm run migrate:deploy`, con `backend` como directorio raiz.
 
 ## Seguridad implementada
 

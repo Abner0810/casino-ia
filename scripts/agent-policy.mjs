@@ -27,6 +27,27 @@ function segments(command) {
   return command.split(/(?:\|\||&&|;|\||\n)/)
 }
 
+// Comparar el nombre del ejecutable, también con rutas entre comillas y
+// extensiones de Windows. No se ejecuta ni se reescribe el comando original.
+function normalizeExecutables(command) {
+  let expectsExecutable = true
+  return command.replace(/"[^"\r\n]*"|'[^'\r\n]*'|&&|\|\||[;&|\r\n]|[^\s;&|]+/g, (token) => {
+    if (/^(?:&&|\|\||[;|\r\n])$/.test(token)) {
+      expectsExecutable = true
+      return token
+    }
+    // & invoca una ruta en PowerShell; los argumentos (incluido -m) se conservan.
+    if (token === '&') { expectsExecutable = true; return token }
+    if (!expectsExecutable) return token
+    if (/^(?:call|command|exec)$/i.test(token) || /^[A-Za-z_][\w]*=/.test(token)) return token
+    expectsExecutable = false
+    const unquoted = token.replace(/^["']|["']$/g, '')
+    const name = unquoted.split(/[\\/]/).at(-1)
+    const executable = /^(npm|pnpm|yarn|bun|firebase|git)(?:\.(?:cmd|exe|bat))?$/i.exec(name)
+    return executable ? executable[1].toLowerCase() : token
+  })
+}
+
 function pushesToMain(command) {
   if (!/\bgit\b/.test(command) || !/\bpush\b/.test(command)) return false
   return segments(command).some((segment) => {
@@ -70,15 +91,16 @@ export function evaluateOperation(tool, args = {}) {
   const input = typeof args === 'string' ? { command: args } : (args ?? {})
   const command = String(input.command ?? input.cmd ?? input.patchText ?? input.patch ?? '')
   if (/^(?:Bash|bash|shell|exec_command)$/.test(tool)) {
-    if (/\b(?:npm|pnpm|yarn|bun)(?:\s+--?[\w=-]+(?:\s+(?!install\b|update\b|add\b|ci\b)[\w./\\:-]+)?)*\s+(?:i|install|add|remove|uninstall|update|upgrade|dedupe)\b/i.test(command)) {
+    const normalized = normalizeExecutables(command)
+    if (/\b(?:npm|pnpm|yarn|bun)(?:\s+--?[\w=-]+(?:\s+(?!install\b|update\b|add\b|ci\b)(?:"[^"\r\n]*"|'[^'\r\n]*'|[\w./\\:-]+))?)*\s+(?:i|install|add|remove|uninstall|update|upgrade|dedupe)\b/i.test(normalized)) {
       return { denied: true, reason: 'Stack congelado: restaurar con npm ci; no cambiar dependencias.' }
     }
-    if (pushesToMain(command)) return { denied: true, reason: MAIN_PUSH_REASON }
-    const commitIssue = evaluateCommitCommand(command)
+    if (pushesToMain(normalized)) return { denied: true, reason: MAIN_PUSH_REASON }
+    const commitIssue = evaluateCommitCommand(normalized)
     if (commitIssue) return { denied: true, reason: commitIssue }
     const leak = scanSecrets(command)
     if (leak) return { denied: true, reason: SECRET_REASON(leak) }
-    return { release: /\bgit\s+(?:-[cC]\s+\S+\s+)*push\b|\bfirebase\s+(?:--[\w-]+(?:=\S+|\s+\S+)?\s+)*deploy\b/.test(command) }
+    return { release: /\bgit\s+(?:-[cC]\s+(?:"[^"\r\n]*"|'[^'\r\n]*'|\S+)\s+)*push\b|\bfirebase\s+(?:--[\w-]+(?:=\S+|\s+\S+)?\s+)*deploy\b/.test(normalized) }
   }
   if (/^(?:apply_patch|patch|Edit|Write|edit|write)$/.test(tool)) {
     const isPatch = tool === 'apply_patch' || tool === 'patch'

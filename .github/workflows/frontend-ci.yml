@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
@@ -35,11 +35,22 @@ jobs:
         working-directory: .
         run: |
           node scripts/agent-policy.mjs
-          node --test scripts/agent-policy.test.mjs
+          node --test scripts/agent-policy.test.mjs scripts/githooks.test.mjs
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - name: Comprobar API en el artefacto compilado
+        if: inputs.api-url != ''
+        run: |
+          node --input-type=module <<'NODE'
+          import { readdirSync, readFileSync } from 'node:fs';
+          const apiUrl = process.env.VITE_API_URL.replace(/\/+$/, '');
+          const scripts = readdirSync('dist/assets').filter((name) => name.endsWith('.js'));
+          if (!scripts.some((name) => readFileSync(`dist/assets/${name}`, 'utf8').includes(apiUrl))) {
+            throw new Error('El artefacto no contiene la URL de API configurada; se cancela la publicación.');
+          }
+          NODE
       - run: npx --no-install playwright install --with-deps chromium
       - run: npm run e2e
       - uses: actions/upload-artifact@v4

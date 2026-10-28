@@ -30,3 +30,14 @@ export const revokeAllRefreshDe = (userId) =>
     where: { userId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+
+// Tras cambiar la contraseña se revocan TODAS las sesiones; el usuario vuelve
+// a iniciar sesión con la nueva. El par de tokens actual queda inválido.
+export const actualizarPasswordHash = (id, passwordHash) =>
+  prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id }, data: { passwordHash } });
+    await tx.refreshToken.updateMany({
+      where: { userId: id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  });

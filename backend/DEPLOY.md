@@ -2,11 +2,18 @@
 
 Servicio de produccion: https://casino-ia-9llp.onrender.com
 
-Render usa `backend` como Root Directory, Node 22 y el build
-`npm ci && npm run build && npm run migrate:deploy`. Configurar las variables
+Abrir `/` redirige con HTTP 302 a https://casino-ia-4e7b6.web.app.
+La API conserva sus rutas `/api/*`; `/health` sigue comprobando API y base de datos.
+
+Render usa `backend` como Root Directory, Node 22.23.4 y un build que
+comprueba la versión antes de ejecutar `npm ci && npm run build && npm run migrate:deploy`. Configurar las variables
 DATABASE_URL, DIRECT_URL, secretos JWT independientes de al menos 32 caracteres
 y CORS_ORIGINS con origenes HTTPS permitidos. Las migraciones deben ser
 compatibles con la version que todavia esta sirviendo trafico.
+
+El build comprueba que Render ejecute exactamente Node 22.23.4. Si el servicio
+tiene `NODE_VERSION` configurado en el Dashboard, ese valor prevalece sobre
+otras fuentes de version; debe coincidir con `render.yaml`.
 
 El secreto de GitHub `RENDER_DEPLOY_HOOK_URL` contiene el deploy hook del
 servicio. No publicar su URL: incluye una credencial. El workflow no necesita

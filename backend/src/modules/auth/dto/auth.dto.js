@@ -18,3 +18,15 @@ export const refreshDTO = z.object({
 });
 
 export const logoutDTO = refreshDTO;
+
+// Cambio de contraseña autenticado: exige la actual y una nueva distinta.
+// Mismas reglas que el registro (8–72 caracteres y 72 bytes UTF-8).
+export const changePasswordDTO = z.object({
+  passwordActual: z.string().min(1, 'La contraseña actual es obligatoria')
+    .refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'La contraseña admite máximo 72 bytes UTF-8'),
+  passwordNueva: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(72)
+    .refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'La contraseña admite máximo 72 bytes UTF-8'),
+}).refine((v) => v.passwordActual !== v.passwordNueva, {
+  message: 'La nueva contraseña debe ser distinta a la actual',
+  path: ['passwordNueva'],
+});

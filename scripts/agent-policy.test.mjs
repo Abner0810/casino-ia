@@ -16,6 +16,37 @@ test('permite npm ci y bloquea mutaciones de dependencias incluso con prefijo', 
   }
 })
 
+test('aplica los controles a ejecutables Windows y rutas entre comillas', () => {
+  for (const command of [
+    'npm.cmd install react', 'npm.cmd --prefix frontend install react',
+    'npm.cmd --prefix "frontend folder" install react', 'pnpm.cmd add react',
+    'yarn.cmd upgrade', 'bun.exe install',
+    '& "C:\\Program Files\\nodejs\\npm.cmd" install react',
+    "& 'C:\\Program Files\\nodejs\\npm.cmd' update", './npm.cmd uninstall react',
+  ]) {
+    assert.equal(evaluateOperation('exec_command', { cmd: command }).denied, true, command)
+  }
+  for (const command of ['npm.cmd ci', 'npm.cmd --prefix "frontend folder" ci',
+    '& "C:\\Program Files\\nodejs\\npm.cmd" run build', 'firebase.cmd projects:list']) {
+    const result = evaluateOperation('exec_command', { cmd: command })
+    assert.ok(!result.denied && !result.release, command)
+  }
+  for (const command of ['firebase.cmd deploy --only hosting', 'firebase.cmd --project casino-ia deploy',
+    '& "C:\\Users\\Test User\\firebase.cmd" deploy --only hosting',
+    "& 'C:\\Users\\Test User\\firebase.cmd' deploy --only hosting",
+    'git.exe push origin dev', '"C:\\Program Files\\Git\\cmd\\git.exe" -C "frontend folder" push origin dev']) {
+    assert.equal(evaluateOperation('exec_command', { cmd: command }).release, true, command)
+  }
+  assert.equal(evaluateOperation('exec_command', { cmd: 'git.exe push origin HEAD:main' }).denied, true)
+  for (const command of ['git commit -m "fix(hooks): document /npm"',
+    'git.exe commit -m "fix(hooks): document /npm"',
+    'git commit -m "docs: describe C:\\Program Files\\npm.cmd"']) {
+    assert.ok(!evaluateOperation('exec_command', { cmd: command }).denied, command)
+  }
+  assert.equal(evaluateOperation('exec_command', { cmd: 'cd frontend; npm.cmd install react' }).denied, true)
+  assert.equal(evaluateOperation('exec_command', { cmd: 'call "C:\\Program Files\\nodejs\\npm.cmd" install react' }).denied, true)
+})
+
 test('protege manifests/secretos y permite .env.example y código', () => {
   assert.equal(evaluateOperation('write', { filePath: 'frontend/package.json' }).denied, true)
   assert.equal(evaluateOperation('edit', { filePath: 'frontend/.env.local' }).denied, true)
@@ -123,6 +154,9 @@ test('hook Codex real produce contexto y bloquea llamada protegida por exit 2', 
   const native = spawnSync(process.execPath, [hook], { cwd: projectRoot, input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'exec_command', tool_input: { cmd: 'npm install react' } }), encoding: 'utf8' })
   assert.equal(native.status, 2)
   assert.match(native.stderr, /Stack congelado/)
+  const windows = spawnSync(process.execPath, [hook], { cwd: projectRoot, input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'exec_command', tool_input: { cmd: 'npm.cmd install react' } }), encoding: 'utf8' })
+  assert.equal(windows.status, 2)
+  assert.match(windows.stderr, /Stack congelado/)
   const mainPush = spawnSync(process.execPath, [hook], { cwd: projectRoot, input: JSON.stringify({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'git push origin main' } }), encoding: 'utf8' })
   assert.equal(mainPush.status, 2)
   assert.match(mainPush.stderr, /pushear a main/)
@@ -133,17 +167,12 @@ test('hook Codex real produce contexto y bloquea llamada protegida por exit 2', 
 })
 
 test('plugin OpenCode registra hook funcional sin paquetes externos', async () => {
-  try {
-    const plugin = await CasinoGuardia()
-    if (plugin && typeof plugin['tool.execute.before'] === 'function') {
-      await assert.rejects(plugin['tool.execute.before']({ tool: 'bash' }, { args: { command: 'npm install react' } }), /Stack congelado/)
-      await assert.rejects(plugin['tool.execute.before']({ tool: 'bash' }, { args: { command: 'git push origin main' } }), /pushear a main/)
-      await assert.rejects(plugin['tool.execute.before']({ tool: 'write' }, { args: { path: 'docs/x.md', content: 'JWT_ACCESS_SECRET=valor-real-super-secreto-32' } }), /Posible/)
-      await plugin['tool.execute.before']({ tool: 'bash' }, { args: { command: 'git status' } })
-    }
-  } catch {
-    // ignore
-  }
+  const plugin = await CasinoGuardia()
+  await assert.rejects(plugin['tool.execute.before']({ tool: 'bash' }, { args: { command: 'npm install react' } }), /Stack congelado/)
+  await assert.rejects(plugin['tool.execute.before']({ tool: 'bash' }, { args: { command: 'npm.cmd install react' } }), /Stack congelado/)
+  await assert.rejects(plugin['tool.execute.before']({ tool: 'bash' }, { args: { command: 'git push origin main' } }), /pushear a main/)
+  await assert.rejects(plugin['tool.execute.before']({ tool: 'write' }, { args: { path: 'docs/x.md', content: 'JWT_ACCESS_SECRET=valor-real-super-secreto-32' } }), /Posible/)
+  await plugin['tool.execute.before']({ tool: 'bash' }, { args: { command: 'git status' } })
   const config = JSON.parse(readFileSync(join(projectRoot, 'opencode.jsonc'), 'utf8'))
   assert.ok(config.permission || config.permissions)
 })

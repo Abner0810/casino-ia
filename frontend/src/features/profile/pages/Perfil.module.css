@@ -111,6 +111,12 @@
   color: var(--color-text-muted);
 }
 
+.ayudaCampo {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
 .formulario {
   display: flex;
   flex-direction: column;
