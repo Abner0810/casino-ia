@@ -99,3 +99,7 @@ Verificación completa ejecutada con Node 22 contra PostgreSQL 18 temporal en lo
 Esto verifica el backend local con persistencia real. No comprueba despliegue remoto, un navegador Firebase ni el gate de integración del workflow raíz.
 
 Docker verificado también: construcción Linux de ambas etapas, arranque con migración inicial, health 200 en modo normal y desarrollo, usuario UID 1000 y ausencia de `.env` dentro de la imagen. El runner Docker aprobó las 11 pruebas de lógica/contrato, smoke y los 19 escenarios de integración. Recrear el stack conservando el volumen mantiene las migraciones aplicadas. El entorno de pruebas se apagó al terminar.
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

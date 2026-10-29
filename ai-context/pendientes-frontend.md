@@ -98,3 +98,7 @@
 - Revisados ambos Markdown del backend y contrastadas rutas, servicios, DTOs y middleware locales relevantes.
 - Identificadas diferencias de balance, rondas, errores, recuperación de Blackjack, split y saldo de apertura.
 - La revisión inicial era documental. La implementación posterior, las pruebas realmente ejecutadas y los bloqueos externos están en [comparacion-frontend.md](./comparacion-frontend.md).
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

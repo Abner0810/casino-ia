@@ -93,3 +93,7 @@ La configuracion, secretos y alternativa manual estan en [backend/DEPLOY.md](bac
 - Blackjack: estado completo server-side en JSONB; el cliente nunca ve la carta oculta del crupier ni influye en el mazo.
 - Ruleta: resultado europeo de 0 a 36 generado en el servidor; apuestas a número, color, paridad, docena o columna.
 - Póker Texas Hold’em: cartas privadas y comunitarias, baraja y partida persistidas en el servidor; las cartas de la banca se ocultan hasta el cierre.
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

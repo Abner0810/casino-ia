@@ -227,3 +227,7 @@ Se puede avanzar con layouts mientras se completan Render y los contratos. No ce
 - Cuando se implemente y ejecute código contra servicios simulados, aplicar `postman:api-simulation`; distinguir evidencia simulada de pruebas reales con PostgreSQL/Render. No se ejecutaron simulaciones en esta tarea documental.
 - QA manual: móvil y escritorio, Chrome/Firefox/Safari disponibles, teclado, foco, zoom y movimiento reducido. Registrar navegador, viewport y resultado; no declarar accesibilidad cumplida solo por una herramienta automática.
 - Entrega terminada: todos los módulos integrados, contratos críticos resueltos, operaciones reflejadas en ledger, sin tokens en artefactos/logs y URL Firebase comprobada con rutas directas. Evidencias y pendientes actualizados en [pendientes-frontend.md](./pendientes-frontend.md).
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

@@ -66,3 +66,7 @@ y el lockfile del frontend permanecen iguales al avance recibido.
   Captura local: `frontend/test-results/firebase-mobile.png` (ignorada por Git).
 
 La guía reproducible de configuración está en [frontend/README.md](../frontend/README.md).
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

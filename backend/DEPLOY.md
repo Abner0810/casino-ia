@@ -52,3 +52,7 @@ Referencias oficiales:
 - https://render.com/docs/deploy-hooks
 - https://render.com/docs/environment-variables
 - https://render.com/docs/deploys
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

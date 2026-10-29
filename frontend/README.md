@@ -93,3 +93,7 @@ o volver a desplegar el commit anterior. No revertir migraciones de base de dato
 Referencia: [Integración oficial Firebase y GitHub](https://firebase.google.com/docs/hosting/github-integration).
 Agentes y hooks: [docs/agentes.md](../docs/agentes.md).
 Comparación y evidencia: [comparacion-frontend.md](../ai-context/comparacion-frontend.md).
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]
