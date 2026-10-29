@@ -36,6 +36,13 @@ enum Riesgo {
   GRANDE
 }
 
+enum EstadoPago {
+  PENDIENTE
+  PAGADO
+  FALLIDO
+  EXPIRADO
+}
+
 // ─────────────────────────── Modelos ───────────────────────────
 
 model User {
@@ -53,6 +60,7 @@ model User {
   partidasPoker PartidaPoker[]
   refreshTokens RefreshToken[]
   operations   Operation[]
+  pagos        Pago[]
   createdAt    DateTime         @default(now())
 }
 
@@ -79,6 +87,8 @@ model Movimiento {
   descripcion  String
   operationId  String?
   operation    Operation? @relation(fields: [operationId], references: [id])
+  pagoId       String?        @unique
+  pago         Pago?          @relation(fields: [pagoId], references: [id])
   createdAt    DateTime         @default(now())
 
   @@index([userId, createdAt])
@@ -179,4 +189,24 @@ model Operation {
   movimientos Movimiento[]
 
   @@unique([userId, key])
+}
+
+// Intento de pago con Stripe. La acreditación ocurre una sola vez:
+// Pago PENDIENTE -> PAGADO se hace con updateMany condicional y el
+// Movimiento queda enlazado por pagoId @unique.
+model Pago {
+  id                    String     @id @default(uuid())
+  userId                String
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monto                 Decimal    @db.Decimal(12,2)
+  moneda                String     @db.VarChar(3)
+  estado                EstadoPago @default(PENDIENTE)
+  stripeSessionId       String     @unique
+  stripePaymentIntentId String?    @unique
+  movimiento            Movimiento?
+  creadoEn              DateTime   @default(now())
+  actualizadoEn         DateTime   @updatedAt
+  pagadoEn              DateTime?
+
+  @@index([userId, creadoEn])
 }

@@ -21,6 +21,26 @@ for (const [name, dto] of [['deposit', depositDTO], ['withdraw', withdrawDTO]]) 
   });
 }
 
+test('producción exige claves Stripe de test y rechaza claves live', () => {
+  const base = {
+    NODE_ENV: 'production', CORS_ORIGINS: 'https://example.com',
+    DATABASE_URL: 'postgresql://test:test@localhost/casino_test', DIRECT_URL: 'postgresql://test:test@localhost/casino_test',
+    JWT_ACCESS_SECRET: 'isolated-test-access-secret-minimum-32', JWT_REFRESH_SECRET: 'isolated-test-refresh-secret-minimum-32',
+  };
+  const casos = [
+    [{}, 1],
+    [{ STRIPE_SECRET_KEY: 'sk_test_dummy' }, 1],
+    [{ STRIPE_SECRET_KEY: 'sk_live_rechazada', STRIPE_WEBHOOK_SECRET: 'whsec_dummy' }, 1],
+    [{ STRIPE_SECRET_KEY: 'sk_test_dummy', STRIPE_WEBHOOK_SECRET: 'whsec_dummy' }, 0],
+  ];
+  for (const [extra, expected] of casos) {
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', "await import('./src/config/env.js')"], {
+      encoding: 'utf8', cwd: new URL('..', import.meta.url), env: { ...base, ...extra },
+    });
+    assert.equal(result.status, expected, result.stderr);
+  }
+});
+
 test('bcrypt rechaza contraseñas Unicode que superan 72 bytes', () => {
   const password = '😀'.repeat(20);
   assert.equal(registerDTO.safeParse({ email: 'test@example.com', nombre: 'Test', password }).success, false);
@@ -33,7 +53,8 @@ test('producción rechaza CORS comodín y acepta origen explícito', () => {
       encoding: 'utf8', cwd: new URL('..', import.meta.url),
       env: { ...process.env, NODE_ENV: 'production', CORS_ORIGINS,
         DATABASE_URL: 'postgresql://test:test@localhost/casino_test', DIRECT_URL: 'postgresql://test:test@localhost/casino_test',
-        JWT_ACCESS_SECRET: 'isolated-test-access-secret-minimum-32', JWT_REFRESH_SECRET: 'isolated-test-refresh-secret-minimum-32' },
+        JWT_ACCESS_SECRET: 'isolated-test-access-secret-minimum-32', JWT_REFRESH_SECRET: 'isolated-test-refresh-secret-minimum-32',
+        STRIPE_SECRET_KEY: 'sk_test_dummy', STRIPE_WEBHOOK_SECRET: 'whsec_dummy' },
     });
     assert.equal(result.status, expected, result.stderr);
   }

@@ -10,6 +10,7 @@ async function prepararApi(page: Page) {
   const rondasRuleta: object[] = []
   const rondasPoker: object[] = []
   const items: object[] = []
+  const pagos: Record<string, { pagoId: string; estado: string; monto: number; moneda: string; creadoEn: string; pagadoEn: string | null }> = {}
   const usuario = { publicId: 'qa-user', email: 'qa@example.com', nombre: 'Usuario QA', rol: 'USER' }
   await page.route(/^http:\/\/127\.0\.0\.1:3000\/api\//, async (route) => {
     const request = route.request()
@@ -30,6 +31,26 @@ async function prepararApi(page: Page) {
       saldo += path.endsWith('deposit') ? monto : -monto
       items.unshift({ id: `mov-${items.length}`, tipo: path.endsWith('deposit') ? 'DEPOSITO' : 'RETIRO', monto, saldoAntes: antes, saldoDespues: saldo, juego: null, descripcion: 'Operación simulada QA', fecha: '2026-10-19T12:00:00Z' })
       return json({ mensaje: 'Operación registrada correctamente', saldoActual: saldo }, 201)
+    }
+    if (path === 'payments/checkout') {
+      expect(request.headers()['idempotency-key']).toBeTruthy()
+      const { monto } = request.postDataJSON()
+      expect(monto).toBe(50)
+      pagos['pago-qa'] = { pagoId: 'pago-qa', estado: 'PENDIENTE', monto, moneda: 'bob', creadoEn: '2026-10-19T12:00:00Z', pagadoEn: null }
+      return json({ pagoId: 'pago-qa', checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_qa', expiraEn: '2026-10-19T12:31:00Z' }, 201)
+    }
+    if (path === 'payments/pago-qa') return json(pagos['pago-qa'])
+    if (path === 'payments/pago-qa/sync') {
+      // La conciliación es idempotente: el saldo se acredita una sola vez.
+      const pago = pagos['pago-qa']
+      if (pago.estado === 'PENDIENTE') {
+        const antes = saldo
+        saldo += pago.monto
+        pago.estado = 'PAGADO'
+        pago.pagadoEn = '2026-10-19T12:01:00Z'
+        items.unshift({ id: `mov-${items.length}`, tipo: 'DEPOSITO', monto: pago.monto, saldoAntes: antes, saldoDespues: saldo, juego: null, descripcion: 'Recarga con Stripe QA', fecha: '2026-10-19T12:01:00Z' })
+      }
+      return json(pago)
     }
     if (path === 'transactions/history') return json({ items, paginacion: { pagina: 1, porPagina: 10, total: items.length, totalPaginas: 1 } })
     if (path === 'users/games/blackjack/access') return json({ juego: 'blackjack', saldo, mesa: { apuestaMinima: 10, apuestaMaxima: 1000, reglas: [] } })
@@ -154,10 +175,14 @@ async function login(page: Page, destino = /\/inicio$/) {
 
 test.beforeEach(async ({ page }) => {
   await prepararApi(page)
+  // El checkout real vive en otro origen: se intercepta para no salir de la SPA de QA.
+  await page.route('https://checkout.stripe.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>Checkout Stripe QA</title>' }),
+  )
   await page.emulateMedia({ reducedMotion: 'reduce' })
 })
 
-test('registro, login, recarga, Plinko, movimientos, retiro rechazado y logout', async ({ page }) => {
+test('registro, login, recarga con Stripe, Plinko, movimientos, retiro rechazado y logout', async ({ page }) => {
   await page.goto('/registro')
   await page.getByLabel('Nombre', { exact: true }).fill('Usuario QA')
   await page.getByLabel('Email', { exact: true }).fill('qa@example.com')
@@ -167,9 +192,23 @@ test('registro, login, recarga, Plinko, movimientos, retiro rechazado y logout',
   await expect(page.getByText('Cuenta creada correctamente. Ya puedes iniciar sesión.')).toBeVisible()
   await login(page)
   await page.getByRole('link', { name: 'Billetera', exact: true }).click()
-  await page.getByLabel(/Monto a recargar/).fill('150.50')
-  await page.getByRole('button', { name: 'Simular recarga' }).click()
-  await expect(page.getByText('Operación completada', { exact: true })).toBeVisible()
+  await page.getByLabel(/Monto a recargar/).fill('50')
+  await page.getByRole('button', { name: 'Pagar con Stripe' }).click()
+  await page.waitForURL(/checkout\.stripe\.com/)
+  // Volver del checkout recarga la SPA: los tokens viven solo en memoria y
+  // RequireAuth conserva la ruta de retorno tras iniciar sesión de nuevo.
+  await page.goto('/billetera/retorno?pago=pago-qa')
+  await expect(page).toHaveURL(/\/login$/)
+  await page.getByLabel('Email', { exact: true }).fill('qa@example.com')
+  await page.getByLabel('Contraseña', { exact: true }).fill('Password123!')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page).toHaveURL(/\/billetera\/retorno\?pago=pago-qa$/)
+  await page.getByRole('button', { name: 'Comprobar de nuevo' }).click()
+  await expect(page.getByRole('heading', { name: 'Recarga confirmada' })).toBeVisible()
+  await expect(page.getByText('Se acreditaron Bs 50,00 a tu saldo de simulación.')).toBeVisible()
+  await page.getByRole('link', { name: 'Ir a la billetera' }).click()
+  await expect(page.getByRole('heading', { name: 'Saldo de simulación en Bs' })).toBeVisible()
+  await expect(page.getByText('Bs 150,00', { exact: true }).first()).toBeVisible()
   await page.getByRole('link', { name: 'Juegos', exact: true }).click()
   await page.getByRole('link', { name: /Plinko|tablero/i }).first().click()
   await expect(page.getByRole('heading', { name: 'Plinko', exact: true })).toBeVisible()
@@ -178,7 +217,7 @@ test('registro, login, recarga, Plinko, movimientos, retiro rechazado y logout',
   await expect(page.getByRole('heading', { name: 'Resultados (1)', exact: true })).toBeVisible()
   await expect(page.getByRole('listitem').filter({ hasText: 'Bola 1' })).toContainText('Neto')
   await page.getByRole('link', { name: 'Movimientos', exact: true }).click()
-  await expect(page.getByText('Operación simulada QA', { exact: true })).toBeVisible()
+  await expect(page.getByText('Recarga con Stripe QA', { exact: true })).toBeVisible()
   await page.getByLabel('Tipo', { exact: true }).selectOption('DEPOSITO')
   await page.getByRole('link', { name: 'Billetera', exact: true }).click()
   await page.getByLabel(/Monto a retirar/).fill('9999')

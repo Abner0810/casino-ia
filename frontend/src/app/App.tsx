@@ -19,6 +19,9 @@ const PlinkoPage = lazy(() => import('@/features/games/plinko/pages/PlinkoPage')
 const BlackjackPage = lazy(() => import('@/features/games/blackjack/pages/BlackjackPage'))
 const RoulettePage = lazy(() => import('@/features/games/roulette/pages/RoulettePage'))
 const PokerPage = lazy(() => import('@/features/games/poker/pages/PokerPage'))
+const RetornoPagoPage = lazy(() =>
+  import('@/features/wallet/pages/RetornoPagoPage').then((modulo) => ({ default: modulo.RetornoPagoPage })),
+)
 
 export default function App() {
   return (
@@ -34,6 +37,14 @@ export default function App() {
           <Route path="/inicio" element={<InicioPage />} />
           <Route path="/perfil" element={<PerfilPage />} />
           <Route path="/billetera" element={<BilleteraPage />} />
+          <Route
+            path="/billetera/retorno"
+            element={
+              <Suspense fallback={<Cargando mensaje="Consultando el pago…" />}>
+                <RetornoPagoPage />
+              </Suspense>
+            }
+          />
           <Route path="/movimientos" element={<MovimientosPage />} />
           <Route path="/juegos" element={<JuegosPage />} />
           <Route

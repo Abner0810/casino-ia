@@ -4104,6 +4104,408 @@
           }
         }
       }
+    },
+    "/api/payments/checkout": {
+      "post": {
+        "operationId": "post__api_payments_checkout",
+        "summary": "Crea una sesión de Stripe Checkout (modo test, BOB)",
+        "description": "Recarga de 5 a 500 Bs. Devuelve checkoutUrl para pagar en el dominio de Stripe; no se reciben datos de tarjeta. Requiere Idempotency-Key; reutilizarla con el mismo body devuelve la misma sesión. 503 PAYMENTS_NOT_CONFIGURED si el entorno no tiene clave de Stripe. El saldo NO se acredita aquí.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "description": "Clave por intención y usuario. Reutilizar con el mismo body y recurso recupera la respuesta original; otro payload produce 409. No se purgan claves automáticamente."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagoCheckoutInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagoCheckout"
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "boolean"
+                },
+                "description": "true si devuelve la respuesta almacenada, sin nuevos efectos."
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/{id}": {
+      "get": {
+        "operationId": "get__api_payments_id_",
+        "summary": "Consulta el estado de un pago propio",
+        "description": "Solo el dueño del pago puede consultarlo; un id ajeno o inexistente responde 404 genérico. Una sesión abandonada permanece PENDIENTE hasta EXPIRADO.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pago"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/{id}/sync": {
+      "get": {
+        "operationId": "get__api_payments_id_sync",
+        "summary": "Reconcilia un pago pendiente contra Stripe",
+        "description": "Si seguía PENDIENTE, consulta la sesión en Stripe y, si está pagada e íntegra, acredita el saldo una sola vez (idempotente con el webhook). Útil al volver del checkout.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pago"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/webhook": {
+      "post": {
+        "operationId": "post_api_payments_webhook",
+        "summary": "Webhook firmado de Stripe (sin auth, cuerpo crudo)",
+        "description": "Fuente de verdad de la acreditación. Stripe firma el cuerpo crudo en el header stripe-signature. Un importe o moneda que no coincide con el Pago no acredita. Los eventos ajenos a checkout se ignoran con 200. Errores transitorios responden 500 para que Stripe reintente; la acreditación es idempotente.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Evento de Stripe (checkout.session.completed, async_payment_succeeded/failed, expired, etc.)."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evento procesado o ignorado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "received": {
+                      "const": true
+                    },
+                    "estado": {
+                      "type": "string"
+                    },
+                    "acreditado": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "received"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Falta la firma o es inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo transitorio; Stripe reintentará",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5579,6 +5981,113 @@
           "createdAt",
           "estado"
         ]
+      },
+      "PagoCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "monto": {
+            "type": "number",
+            "minimum": 5,
+            "maximum": 500,
+            "multipleOf": 0.01,
+            "description": "Recarga en bolivianos (BOB). La moneda la fija el servidor."
+          }
+        },
+        "required": [
+          "monto"
+        ],
+        "example": {
+          "monto": 50
+        }
+      },
+      "PagoCheckout": {
+        "type": "object",
+        "properties": {
+          "pagoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiraEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "pagoId",
+          "checkoutUrl",
+          "expiraEn",
+          "operationId"
+        ],
+        "example": {
+          "pagoId": "bd61d740-589b-48a6-98e7-b07f93040b4e",
+          "checkoutUrl": "https://checkout.stripe.com/c/pay/cs_test_example",
+          "expiraEn": "2026-10-28T18:30:00.000Z",
+          "operationId": "0f7e1a52-6a52-4f0e-9f0e-6a524f0e9f0e"
+        }
+      },
+      "Pago": {
+        "type": "object",
+        "properties": {
+          "pagoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PENDIENTE",
+              "PAGADO",
+              "FALLIDO",
+              "EXPIRADO"
+            ]
+          },
+          "monto": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "moneda": {
+            "type": "string",
+            "enum": [
+              "bob"
+            ]
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pagadoEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "pagoId",
+          "estado",
+          "monto",
+          "moneda",
+          "creadoEn",
+          "pagadoEn"
+        ],
+        "example": {
+          "pagoId": "bd61d740-589b-48a6-98e7-b07f93040b4e",
+          "estado": "PAGADO",
+          "monto": 50,
+          "moneda": "bob",
+          "creadoEn": "2026-10-28T18:00:00.000Z",
+          "pagadoEn": "2026-10-28T18:02:11.000Z"
+        }
       }
     }
   }

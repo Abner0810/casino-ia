@@ -52,6 +52,9 @@ const schemas = {
   PokerGame: object({ partidaId: uuid, version: integer, estado: ref('GameState'), fase: { type: 'string', enum: ['PREFLOP', 'FLOP', 'TURN', 'RIVER', 'SHOWDOWN'] }, cartasJugador: array(str), cartasBanca: array(str), comunitarias: array(str), apuestaBase: money, apuestaTotal: money, bote: money, accionesPermitidas: array({ type: 'string', enum: ['check', 'raise', 'fold'] }), saldoActual: money, resultado: { type: ['object', 'null'] } }),
   PokerRound: object({ id: uuid, apuesta: money, apuestaTotal: money, bote: money, estado: ref('GameState'), fase: { type: 'string' }, manoJugador: { type: ['string', 'null'] }, manoBanca: { type: ['string', 'null'] }, ganancia: money, creadaEn: date, cerradaEn: { type: ['string', 'null'], format: 'date-time' } }),
   Operation: object({ id: uuid, operation: str, status: { type: 'integer' }, response: { type: 'object', description: 'Respuesta JSON original de la mutación, incluido operationId.' }, createdAt: date, estado: { const: 'CONFIRMADA' } }),
+  PagoCheckoutInput: object({ monto: { type: 'number', minimum: 5, maximum: 500, multipleOf: 0.01, description: 'Recarga en bolivianos (BOB). La moneda la fija el servidor.' } }),
+  PagoCheckout: object({ pagoId: uuid, checkoutUrl: { type: 'string', format: 'uri' }, expiraEn: date, operationId: uuid }),
+  Pago: object({ pagoId: uuid, estado: { type: 'string', enum: ['PENDIENTE', 'PAGADO', 'FALLIDO', 'EXPIRADO'] }, monto: money, moneda: { type: 'string', enum: ['bob'] }, creadoEn: date, pagadoEn: { type: ['string', 'null'], format: 'date-time' } }),
 };
 
 const paths = {};
@@ -65,6 +68,9 @@ schemas.PokerStart.example = { apuesta: 10 };
 schemas.PokerAction.example = { version: 0, accion: 'check' };
 schemas.BlackjackAction.example = { version: 0 };
 schemas.PlinkoBet.example = { apuesta: 10, riesgo: 'PEQUENO' };
+schemas.PagoCheckoutInput.example = { monto: 50 };
+schemas.PagoCheckout.example = { pagoId: 'bd61d740-589b-48a6-98e7-b07f93040b4e', checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_example', expiraEn: '2026-10-28T18:30:00.000Z', operationId: '0f7e1a52-6a52-4f0e-9f0e-6a524f0e9f0e' };
+schemas.Pago.example = { pagoId: 'bd61d740-589b-48a6-98e7-b07f93040b4e', estado: 'PAGADO', monto: 50, moneda: 'bob', creadoEn: '2026-10-28T18:00:00.000Z', pagadoEn: '2026-10-28T18:02:11.000Z' };
 schemas.Error.example = { error: 'La partida cambió. Consulta su estado actual.', codigo: 'STALE_VERSION', requestId: 'bd61d740-589b-48a6-98e7-b07f93040b4e' };
 schemas.Wallet.example = { saldo: 100, bono: 0, totalDisponible: 100, actualizadoEn: '2026-10-19T16:00:00Z' };
 schemas.Blackjack.example = { partidaId: 'bd61d740-589b-48a6-98e7-b07f93040b4e', version: 0, indiceManoActiva: 0, estado: 'ACTIVA', apuestaBase: 10, apuestaTotal: 10, dealer: { cartas: ['10♣', '🂠'], totalVisible: 10 }, manos: [{ cartas: ['8♠', '8♥'], valor: 16, apuesta: 10, estado: 'ACTIVA', ganancia: null, dividida: false, doblada: false }], cartasRestantes: 308, resultado: null, accionesPermitidas: ['hit', 'stand', 'exit', 'double', 'split'], saldoActual: 90 };
@@ -136,6 +142,28 @@ endpoint('/api/games/poker/rounds', 'get', 'Últimas diez partidas de póker pro
 endpoint('/api/games/poker/{id}', 'get', 'Consulta partida de póker propia', { output: ref('PokerGame'), params: [id] });
 endpoint('/api/games/poker/{id}/action', 'post', 'Ejecuta una acción de Texas Hold’em', { input: ref('PokerAction'), output: ref('PokerGame'), mutation: true, params: [id], description: 'version obsoleta produce 409 STALE_VERSION. Repetir misma clave y body recupera respuesta sin nuevos efectos.' });
 endpoint('/api/operations/{key}', 'get', 'Recupera resultado confirmado de una mutación', { params: [{ name: 'key', in: 'path', required: true, schema: str }], output: ref('Operation'), description: '404 puede significar solicitud aún en curso, rollback, clave ajena o desconocida. No prueba por sí solo que la intención no se ejecutó. Repetir exactamente la mutación con la misma clave es seguro; no generar una nueva.' });
+
+endpoint('/api/payments/checkout', 'post', 'Crea una sesión de Stripe Checkout (modo test, BOB)', { input: ref('PagoCheckoutInput'), output: ref('PagoCheckout'), mutation: true, status: 201, description: 'Recarga de 5 a 500 Bs. Devuelve checkoutUrl para pagar en el dominio de Stripe; no se reciben datos de tarjeta. Requiere Idempotency-Key; reutilizarla con el mismo body devuelve la misma sesión. 503 PAYMENTS_NOT_CONFIGURED si el entorno no tiene clave de Stripe. El saldo NO se acredita aquí.' });
+endpoint('/api/payments/{id}', 'get', 'Consulta el estado de un pago propio', { output: ref('Pago'), params: [id], description: 'Solo el dueño del pago puede consultarlo; un id ajeno o inexistente responde 404 genérico. Una sesión abandonada permanece PENDIENTE hasta EXPIRADO.' });
+endpoint('/api/payments/{id}/sync', 'get', 'Reconcilia un pago pendiente contra Stripe', { output: ref('Pago'), params: [id], description: 'Si seguía PENDIENTE, consulta la sesión en Stripe y, si está pagada e íntegra, acredita el saldo una sola vez (idempotente con el webhook). Útil al volver del checkout.' });
+
+paths['/api/payments/webhook'] = {
+  post: {
+    operationId: 'post_api_payments_webhook',
+    summary: 'Webhook firmado de Stripe (sin auth, cuerpo crudo)',
+    description: 'Fuente de verdad de la acreditación. Stripe firma el cuerpo crudo en el header stripe-signature. Un importe o moneda que no coincide con el Pago no acredita. Los eventos ajenos a checkout se ignoran con 200. Errores transitorios responden 500 para que Stripe reintente; la acreditación es idempotente.',
+    security: [],
+    requestBody: {
+      required: true,
+      content: { 'application/json': { schema: { type: 'object', description: 'Evento de Stripe (checkout.session.completed, async_payment_succeeded/failed, expired, etc.).' } } },
+    },
+    responses: {
+      200: { description: 'Evento procesado o ignorado', content: json(object({ received: { const: true }, estado: str, acreditado: { type: 'boolean' } }, ['received'])) },
+      400: { description: 'Falta la firma o es inválida', content: json(object({ error: str })) },
+      500: { description: 'Fallo transitorio; Stripe reintentará', content: json(object({ error: str })) },
+    },
+  },
+};
 
 export const contract = {
   openapi: '3.1.0',

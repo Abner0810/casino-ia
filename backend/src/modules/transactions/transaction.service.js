@@ -7,11 +7,16 @@
 
 import { userTransaction } from '../../shared/transaction.js';
 import { ApiError } from '../../shared/ApiError.js';
+import { env } from '../../config/env.js';
 import { toDecimal, toNumber } from '../../shared/utils/money.js';
 import { acreditar, debitar } from '../../shared/utils/ledger.js';
 import * as repo from './transaction.repository.js';
 
 export async function depositar(userId, { monto, metodo }) {
+  // En producción la recarga real pasa por Stripe Checkout.
+  if (env.esProduccion) {
+    throw new ApiError(403, 'Las recargas se realizan con Stripe. Usa /api/payments/checkout', undefined, 'USE_STRIPE_CHECKOUT');
+  }
   const montoDec = toDecimal(monto);
 
   const saldoFinal = await userTransaction(userId, async (tx) => {
