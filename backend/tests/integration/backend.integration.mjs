@@ -127,6 +127,46 @@ test('backend persistente y contrato HTTP', async (t) => {
     }
   });
 
+  await t.test('ruleta liquida una vez, conserva ledger y bloquea combinaciones inválidas', async () => {
+    const id = await user(); await deposit(id, 100);
+    const key = randomUUID();
+    const bet = { apuesta: 10, tipo: 'color', seleccion: 'rojo' };
+    const first = await request(id, 'POST', '/api/games/roulette/bet', bet, key);
+    const replay = await request(id, 'POST', '/api/games/roulette/bet', bet, key);
+    assert.equal(first.status, 201); assert.deepEqual(replay.body, first.body);
+    assert.equal(replay.headers.get('Idempotency-Replayed'), 'true');
+    assert.equal(first.body.saldoActual, 90 + first.body.ganancia);
+    assert.equal(await balance(id), first.body.saldoActual);
+    assert.equal(await prisma.movimiento.count({ where: { operationId: first.body.operationId, tipo: 'APUESTA', juego: 'roulette' } }), 1);
+    assert.equal(await prisma.movimiento.count({ where: { operationId: first.body.operationId, tipo: 'PREMIO', juego: 'roulette' } }), first.body.ganancia ? 1 : 0);
+    assert.equal((await request(id, 'POST', '/api/games/roulette/bet', { apuesta: 10, tipo: 'pleno', seleccion: 37 }, randomUUID())).status, 400);
+    assert.equal((await request(id, 'GET', '/api/games/roulette/rounds')).body.items.length, 1);
+  });
+
+  await t.test('póker recupera partida propia, oculta mazo y liquida una sola vez', async () => {
+    const id = await user(); await deposit(id, 100);
+    const startKey = randomUUID();
+    const start = await request(id, 'POST', '/api/games/poker/start', { apuesta: 10 }, startKey);
+    assert.equal(start.status, 201); assert.equal(start.body.version, 0);
+    assert.equal(start.body.cartas.length, 5); assert.equal(start.body.baraja, undefined);
+    assert.equal(start.body.saldoActual, 90);
+    assert.equal((await request(id, 'GET', '/api/games/poker/active')).body.partida.partidaId, start.body.partidaId);
+    const path = `/api/games/poker/${start.body.partidaId}`;
+    assert.equal((await request(await user(), 'GET', path)).status, 404);
+    assert.equal((await request(id, 'POST', '/api/games/poker/start', { apuesta: 10 }, randomUUID())).status, 409);
+    const drawKey = randomUUID();
+    const draw = await request(id, 'POST', `${path}/draw`, { version: 0, conservar: [0, 2] }, drawKey);
+    assert.equal(draw.status, 200); assert.equal(draw.body.version, 1);
+    assert.equal(draw.body.saldoActual, 90 + draw.body.ganancia);
+    assert.equal(await balance(id), draw.body.saldoActual);
+    assert.equal((await request(id, 'POST', `${path}/draw`, { version: 0, conservar: [0, 2] }, drawKey)).body.operationId, draw.body.operationId);
+    assert.equal((await request(id, 'POST', `${path}/draw`, { version: 0, conservar: [] }, randomUUID())).status, 409);
+    assert.equal((await request(await user(), 'POST', `${path}/draw`, { version: 0, conservar: [] }, randomUUID())).status, 404);
+    assert.equal((await request(id, 'GET', '/api/games/poker/active')).body.partida, null);
+    assert.equal((await prisma.movimiento.count({ where: { userId: id, juego: 'poker', tipo: 'APUESTA' } })), 1);
+    assert.equal((await prisma.movimiento.count({ where: { userId: id, juego: 'poker', tipo: 'PREMIO' } })), draw.body.ganancia ? 1 : 0);
+  });
+
   await t.test('Blackjack reconstruye columnas JSON, oculta dealer y comprueba ownership', async () => {
     const id = await user(); await deposit(id, 100); const p = await fixture(id);
     const state = await request(id, 'GET', `/api/games/blackjack/${p.id}`);
