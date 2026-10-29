@@ -2,7 +2,7 @@ import { http } from '@/shared/api/http'
 import { ejecutarOperacion } from '@/shared/api/operations'
 import type { Riesgo } from './plinko/plinko.constantes'
 
-export type Juego = 'plinko' | 'blackjack'
+export type Juego = 'plinko' | 'blackjack' | 'roulette' | 'poker'
 
 // ── Acceso a juegos (POST /api/users/games/:juego/access) ──
 export type RiesgoDisponible = {
@@ -24,7 +24,77 @@ export type AccesoBlackjack = {
   mesa: { apuestaMinima: number; apuestaMaxima: number; reglas: string[] }
 }
 
-export type AccesoJuego = AccesoPlinko | AccesoBlackjack
+export type AccesoMesa = {
+  juego: 'roulette' | 'poker'
+  saldo: number
+  mesa: { apuestaMinima: number; apuestaMaxima: number; reglas: string[] }
+}
+
+export type AccesoJuego = AccesoPlinko | AccesoBlackjack | AccesoMesa
+
+export type TipoApuestaRuleta = 'pleno' | 'color' | 'paridad' | 'docena' | 'columna'
+export type ColorRuleta = 'rojo' | 'negro' | 'verde'
+export type ResultadoRuleta = {
+  rondaId: string
+  numero: number
+  color: ColorRuleta
+  apuesta: number
+  tipo: TipoApuestaRuleta
+  seleccion: number | string
+  multiplicador: number
+  ganancia: number
+  gananciaNeta: number
+  saldoActual: number
+}
+export type ConfiguracionRuleta = {
+  apuestaMinima: number
+  apuestaMaxima: number
+  pagos: Record<TipoApuestaRuleta, number>
+}
+export type RondaRuleta = Omit<ResultadoRuleta, 'rondaId' | 'gananciaNeta' | 'saldoActual'> & { id: string; fecha: string }
+
+export type PartidaPoker = {
+  partidaId: string
+  version: number
+  estado: 'ACTIVA' | 'GANADA' | 'PERDIDA' | 'EMPATE'
+  fase: 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER' | 'SHOWDOWN'
+  cartasJugador: string[]
+  cartasBanca: string[]
+  comunitarias: string[]
+  apuestaBase: number
+  apuestaTotal: number
+  bote: number
+  accionesPermitidas: AccionPoker[]
+  saldoActual: number
+  resultado: {
+    ganador: 'JUGADOR' | 'BANCA' | 'EMPATE'
+    motivo: 'SHOWDOWN' | 'RETIRO'
+    manoJugador: string | null
+    manoBanca: string | null
+    ganancia: number
+    gananciaNeta: number
+  } | null
+}
+export type AccionPoker = 'check' | 'raise' | 'fold'
+export type ConfiguracionPoker = {
+  apuestaMinima: number
+  apuestaMaxima: number
+  maxSubidas: number
+  reglas: string[]
+}
+export type RondaPoker = {
+  id: string
+  apuesta: number
+  apuestaTotal: number
+  bote: number
+  estado: PartidaPoker['estado']
+  fase: PartidaPoker['fase']
+  manoJugador: string | null
+  manoBanca: string | null
+  ganancia: number
+  creadaEn: string
+  cerradaEn: string | null
+}
 
 // ── Plinko ──
 export type ResultadoPlinko = {
@@ -116,5 +186,20 @@ export const gamesApi = {
     accion: (partidaId: string, accion: AccionBlackjack, version: number) =>
       ejecutarOperacion<PartidaBlackjack>(`games/blackjack/${partidaId}/${accion}`, { version }),
     rondas: async () => (await http<{ items: PartidaResumen[] }>('games/blackjack/rounds')).items,
+  },
+  roulette: {
+    configuracion: () => http<ConfiguracionRuleta>('games/roulette/config'),
+    apostar: (apuesta: number, tipo: TipoApuestaRuleta, seleccion: number | string) =>
+      ejecutarOperacion<ResultadoRuleta>('games/roulette/bet', { apuesta, tipo, seleccion }),
+    rondas: async () => (await http<{ items: RondaRuleta[] }>('games/roulette/rounds')).items,
+  },
+  poker: {
+    configuracion: () => http<ConfiguracionPoker>('games/poker/config'),
+    activa: () => http<{ partida: PartidaPoker | null }>('games/poker/active'),
+    consultar: (partidaId: string) => http<PartidaPoker>(`games/poker/${partidaId}`),
+    iniciar: (apuesta: number) => ejecutarOperacion<PartidaPoker>('games/poker/start', { apuesta }),
+    accion: (partidaId: string, version: number, accion: AccionPoker) =>
+      ejecutarOperacion<PartidaPoker>(`games/poker/${partidaId}/action`, { version, accion }),
+    rondas: async () => (await http<{ items: RondaPoker[] }>('games/poker/rounds')).items,
   },
 }
