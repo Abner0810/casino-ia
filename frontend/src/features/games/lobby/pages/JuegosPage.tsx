@@ -26,6 +26,28 @@ const JUEGOS = [
     ],
     ruta: '/juegos/blackjack',
   },
+  {
+    id: 'ruleta',
+    titulo: 'Ruleta clásica',
+    descripcion: 'Apuesta en una ruleta europea de 37 casillas y observa dónde se detiene la bola.',
+    reglas: [
+      'Apuesta a un número, color, paridad, docena o columna.',
+      'El 0 es verde y pierde las apuestas externas.',
+      'Cada giro y premio lo decide el servidor.',
+    ],
+    ruta: '/juegos/ruleta',
+  },
+  {
+    id: 'poker',
+    titulo: 'Poker',
+    descripcion: 'Texas Hold’em contra la banca con dos cartas propias y cinco comunitarias.',
+    reglas: [
+      'Tu apuesta inicial abre la mano; puedes pasar, subir una apuesta o retirarte en cada fase.',
+      'Se revelan flop, turn y river. La mejor combinación de cinco cartas decide el resultado.',
+      'Al ganar recibes el bote; un empate devuelve lo apostado. Todo el saldo es simulado.',
+    ],
+    ruta: '/juegos/poker',
+  },
 ] as const
 
 export function JuegosPage() {
