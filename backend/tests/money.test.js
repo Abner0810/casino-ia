@@ -4,6 +4,10 @@ import { toDecimal, toNumber, dosDecimales } from '../src/shared/utils/money.js'
 import { depositDTO, withdrawDTO } from '../src/modules/transactions/dto/transaction.dto.js';
 import { registerDTO, loginDTO } from '../src/modules/auth/dto/auth.dto.js';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+// Los procesos de validación no deben completar variables desde el .env local.
+const isolatedEnvPath = fileURLToPath(new URL('./fixtures/empty-env.txt', import.meta.url));
 
 test('dinero conserva centavos al sumar y redondear premios', () => {
   assert.equal(toNumber(toDecimal('0.1').add('0.2')), 0.3);
@@ -23,6 +27,7 @@ for (const [name, dto] of [['deposit', depositDTO], ['withdraw', withdrawDTO]]) 
 
 test('producción exige claves Stripe de test y rechaza claves live', () => {
   const base = {
+    DOTENV_CONFIG_PATH: isolatedEnvPath,
     NODE_ENV: 'production', CORS_ORIGINS: 'https://example.com',
     DATABASE_URL: 'postgresql://test:test@localhost/casino_test', DIRECT_URL: 'postgresql://test:test@localhost/casino_test',
     JWT_ACCESS_SECRET: 'isolated-test-access-secret-minimum-32', JWT_REFRESH_SECRET: 'isolated-test-refresh-secret-minimum-32',
@@ -51,7 +56,7 @@ test('producción rechaza CORS comodín y acepta origen explícito', () => {
   for (const [CORS_ORIGINS, expected] of [['*', 1], ['https://example.com,*', 1], ['https://example.com', 0]]) {
     const result = spawnSync(process.execPath, ['--input-type=module', '-e', "await import('./src/config/env.js')"], {
       encoding: 'utf8', cwd: new URL('..', import.meta.url),
-      env: { ...process.env, NODE_ENV: 'production', CORS_ORIGINS,
+      env: { ...process.env, DOTENV_CONFIG_PATH: isolatedEnvPath, NODE_ENV: 'production', CORS_ORIGINS,
         DATABASE_URL: 'postgresql://test:test@localhost/casino_test', DIRECT_URL: 'postgresql://test:test@localhost/casino_test',
         JWT_ACCESS_SECRET: 'isolated-test-access-secret-minimum-32', JWT_REFRESH_SECRET: 'isolated-test-refresh-secret-minimum-32',
         STRIPE_SECRET_KEY: 'sk_test_dummy', STRIPE_WEBHOOK_SECRET: 'whsec_dummy' },
