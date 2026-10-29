@@ -65,24 +65,64 @@ async function prepararApi(page: Page) {
       return json(resultado, 201)
     }
     if (path === 'users/games/poker/access') return json({ juego: 'poker', saldo, mesa: { apuestaMinima: 1, apuestaMaxima: 1000, reglas: [] } })
-    if (path === 'games/poker/config') return json({ apuestaMinima: 1, apuestaMaxima: 1000, pagos: [{ mano: 'Pareja de jotas o mejor', multiplicador: 1 }, { mano: 'Escalera real', multiplicador: 800 }] })
+    if (path === 'games/poker/config') return json({ apuestaMinima: 1, apuestaMaxima: 1000, maxSubidas: 4, reglas: ['Texas Hold’em contra la banca'] })
     if (path === 'games/poker/active') return json({ partida: partidaPoker?.estado === 'ACTIVA' ? partidaPoker : null })
     if (path === 'games/poker/rounds') return json({ items: rondasPoker })
     if (path === 'games/poker/start') {
       expect(request.headers()['idempotency-key']).toBeTruthy()
       const { apuesta } = request.postDataJSON()
       saldo -= apuesta
-      partidaPoker = { partidaId: 'poker-qa', version: 0, estado: 'ACTIVA', cartas: ['J♥', 'J♠', '4♣', '8♦', '2♣'], apuesta, saldoActual: saldo }
-      rondasPoker.unshift({ id: 'poker-qa', apuesta, estado: 'ACTIVA', creadaEn: '2026-10-19T12:00:00Z' })
+      partidaPoker = {
+        partidaId: 'poker-qa',
+        version: 0,
+        estado: 'ACTIVA',
+        fase: 'PREFLOP',
+        cartasJugador: ['J♥', 'J♠'],
+        cartasBanca: ['🂠', '🂠'],
+        comunitarias: [],
+        apuestaBase: apuesta,
+        apuestaTotal: apuesta,
+        bote: apuesta * 2,
+        accionesPermitidas: ['check', 'raise', 'fold'],
+        saldoActual: saldo,
+        resultado: null,
+      }
+      rondasPoker.unshift({ id: 'poker-qa', apuesta, apuestaTotal: apuesta, bote: apuesta * 2, estado: 'ACTIVA', fase: 'PREFLOP', manoJugador: null, manoBanca: null, ganancia: 0, creadaEn: '2026-10-19T12:00:00Z', cerradaEn: null })
       return json(partidaPoker, 201)
     }
-    if (path === 'games/poker/poker-qa/draw') {
+    if (path === 'games/poker/poker-qa/action') {
       expect(request.headers()['idempotency-key']).toBeTruthy()
-      expect(request.postDataJSON()).toEqual({ version: 0, conservar: [0, 1] })
-      const apuesta = Number(partidaPoker!.apuesta)
-      saldo += apuesta
-      partidaPoker = { ...partidaPoker, version: 1, estado: 'GANADA', cartas: ['J♥', 'J♠', '6♦', '9♣', '3♥'], mano: 'Pareja de jotas o mejor', multiplicador: 1, ganancia: apuesta, gananciaNeta: 0, saldoActual: saldo }
-      rondasPoker[0] = { id: 'poker-qa', apuesta, estado: 'GANADA', mano: 'Pareja de jotas o mejor', multiplicador: 1, ganancia: apuesta, creadaEn: '2026-10-19T12:00:00Z', cerradaEn: '2026-10-19T12:01:00Z' }
+      const { version, accion } = request.postDataJSON()
+      expect(version).toBe(partidaPoker!.version)
+      expect(['check', 'raise', 'fold']).toContain(accion)
+      const transiciones: Record<string, readonly [string, string[]]> = {
+        PREFLOP: ['FLOP', ['2♦', '7♣', '10♥']],
+        FLOP: ['TURN', ['A♠']],
+        TURN: ['RIVER', ['3♣']],
+        RIVER: ['SHOWDOWN', []],
+      }
+      const siguiente = transiciones[partidaPoker!.fase as string]
+      if (!siguiente) throw new Error(`Fase Poker desconocida: ${String(partidaPoker!.fase)}`)
+      const apuesta = Number(partidaPoker!.apuestaTotal)
+      const nuevaApuesta = accion === 'raise' ? apuesta + Number(partidaPoker!.apuestaBase) : apuesta
+      if (accion === 'raise') saldo -= Number(partidaPoker!.apuestaBase)
+      const termina = accion === 'fold' || siguiente[0] === 'SHOWDOWN'
+      const resultado = termina ? { ganador: accion === 'fold' ? 'BANCA' : 'JUGADOR', motivo: accion === 'fold' ? 'RETIRO' : 'SHOWDOWN', manoJugador: 'Pareja', manoBanca: 'Carta alta', ganancia: accion === 'fold' ? 0 : nuevaApuesta * 2, gananciaNeta: accion === 'fold' ? -nuevaApuesta : nuevaApuesta } : null
+      if (resultado?.ganador === 'JUGADOR') saldo += resultado.ganancia
+      partidaPoker = {
+        ...partidaPoker,
+        version: Number(partidaPoker!.version) + 1,
+        estado: termina ? (resultado?.ganador === 'JUGADOR' ? 'GANADA' : 'PERDIDA') : 'ACTIVA',
+        fase: siguiente[0],
+        comunitarias: [...(partidaPoker!.comunitarias as string[]), ...siguiente[1]],
+        cartasBanca: termina ? ['A♣', 'K♦'] : ['🂠', '🂠'],
+        apuestaTotal: nuevaApuesta,
+        bote: nuevaApuesta * 2,
+        accionesPermitidas: termina ? [] : ['check', 'raise', 'fold'],
+        saldoActual: saldo,
+        resultado,
+      }
+      rondasPoker[0] = { ...rondasPoker[0], estado: partidaPoker.estado, fase: partidaPoker.fase, apuestaTotal: nuevaApuesta, bote: nuevaApuesta * 2, ganancia: resultado?.ganancia ?? 0, cerradaEn: termina ? '2026-10-19T12:01:00Z' : null }
       return json(partidaPoker)
     }
     if (path === 'games/poker/poker-qa') return json(partidaPoker)
@@ -198,7 +238,7 @@ test('layout sin desbordamiento horizontal en tamaños requeridos', async ({ pag
       await page.getByRole('link', { name: ruta, exact: true }).click()
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     }
-    for (const nombre of ['Jugar Ruleta clásica', 'Jugar Video póker']) {
+    for (const nombre of ['Jugar Ruleta clásica', 'Jugar Poker']) {
       await page.getByRole('link', { name: nombre }).click()
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       await page.getByRole('link', { name: 'Juegos', exact: true }).click()
@@ -223,24 +263,21 @@ test('ruleta confirma el giro y actualiza saldo con movimiento reducido', async 
   await expect(page.getByText('Saldo', { exact: true }).first().locator('..')).toContainText('110.00')
 })
 
-test('video póker recupera mano, conserva cartas y paga resultado del servidor', async ({ page }) => {
+test('Poker Texas Hold’em recupera la mano y avanza sus fases', async ({ page }) => {
   await login(page)
   await page.getByRole('link', { name: 'Juegos', exact: true }).click()
-  await page.getByRole('link', { name: 'Jugar Video póker' }).click()
+  await page.getByRole('link', { name: 'Jugar Poker' }).click()
   await page.getByLabel('Apuesta', { exact: true }).fill('20')
   await page.getByRole('button', { name: 'Repartir cartas' }).click()
-  await expect(page.getByRole('button', { name: /Carta 1: J♥/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Poker', exact: true })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Tus cartas' })).toContainText('J♥')
+  await expect(page.getByRole('group', { name: 'Tus cartas' })).toContainText('J♠')
   await page.setViewportSize({ width: 320, height: 900 })
-  const filas = await page.getByRole('group', { name: 'Tus cinco cartas' }).getByRole('button').evaluateAll((cartas) => cartas.map((carta) => Math.round(carta.getBoundingClientRect().top)))
-  expect(new Set(filas).size).toBe(1)
+  await expect(page.getByRole('group', { name: 'Cartas comunitarias' })).toBeVisible()
   await page.getByRole('link', { name: 'Movimientos', exact: true }).click()
   await page.getByRole('link', { name: 'Juegos', exact: true }).click()
-  await page.getByRole('link', { name: 'Jugar Video póker' }).click()
-  await page.getByRole('button', { name: /Carta 1: J♥/ }).focus()
-  await page.keyboard.press('Space')
-  await page.getByRole('button', { name: /Carta 2: J♠/ }).click()
-  await expect(page.getByRole('button', { name: /Carta 1: J♥/ })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('button', { name: 'Cambiar 3 cartas' }).click()
-  await expect(page.getByText('Pareja de jotas o mejor', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText('Saldo confirmado')).toContainText('100.00')
+  await page.getByRole('link', { name: 'Jugar Poker' }).click()
+  await expect(page.getByText('Cartas iniciales').first()).toBeVisible()
+  await page.getByRole('button', { name: /Pasar · ver flop/i }).click()
+  await expect(page.getByText('Flop').first()).toBeVisible()
 })
