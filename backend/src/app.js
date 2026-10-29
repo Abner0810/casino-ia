@@ -13,6 +13,8 @@ import walletRoutes from './modules/wallet/wallet.routes.js';
 import transactionsRoutes from './modules/transactions/transaction.routes.js';
 import plinkoRoutes from './modules/games/plinko/plinko.routes.js';
 import blackjackRoutes from './modules/games/blackjack/blackjack.routes.js';
+import rouletteRoutes from './modules/games/roulette/roulette.routes.js';
+import pokerRoutes from './modules/games/poker/poker.routes.js';
 import operationRoutes from './modules/operations/operation.routes.js';
 import { env } from './config/env.js';
 
@@ -59,6 +61,8 @@ export function buildApp() {
   app.use('/api/transactions', transactionsRoutes);
   app.use('/api/games/plinko', plinkoRoutes);
   app.use('/api/games/blackjack', blackjackRoutes);
+  app.use('/api/games/roulette', rouletteRoutes);
+  app.use('/api/games/poker', pokerRoutes);
   app.use('/api/operations', operationRoutes);
 
   app.use(notFoundHandler);

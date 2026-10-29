@@ -7,6 +7,8 @@ import { ApiError } from '../../shared/ApiError.js';
 import { toNumber } from '../../shared/utils/money.js';
 import { PLINKO_RIESGOS } from '../games/plinko/plinko.config.js';
 import { BLACKJACK_LIMITES } from '../games/blackjack/blackjack.config.js';
+import { RULETA_LIMITES } from '../games/roulette/roulette.config.js';
+import { POKER_LIMITES } from '../games/poker/poker.config.js';
 import * as repo from './user.repository.js';
 
 const perfil = (user) => ({
@@ -54,6 +56,16 @@ export async function accesoJuego(userId, juego) {
       })),
     };
   }
+
+  if (juego === 'roulette') return {
+    juego, saldo: toNumber(user.wallet.saldo),
+    mesa: { apuestaMinima: RULETA_LIMITES.MIN, apuestaMaxima: RULETA_LIMITES.MAX, reglas: ['Ruleta europea de un cero', 'El cero pierde las apuestas externas'] },
+  };
+
+  if (juego === 'poker') return {
+    juego, saldo: toNumber(user.wallet.saldo),
+    mesa: { apuestaMinima: POKER_LIMITES.MIN, apuestaMaxima: POKER_LIMITES.MAX, reglas: ['Texas Hold’em contra la banca', 'Dos cartas privadas y cinco comunitarias'] },
+  };
 
   return {
     juego,

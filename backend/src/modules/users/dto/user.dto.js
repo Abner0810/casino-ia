@@ -5,7 +5,7 @@ export const updateProfileDTO = z.object({
 });
 
 export const accesoJuegoDTO = z.object({
-  juego: z.enum(['plinko', 'blackjack'], {
-    errorMap: () => ({ message: 'Juego no válido. Usa "plinko" o "blackjack"' }),
+  juego: z.enum(['plinko', 'blackjack', 'roulette', 'poker'], {
+    errorMap: () => ({ message: 'Juego no válido. Usa plinko, blackjack, roulette o poker' }),
   }),
 });
