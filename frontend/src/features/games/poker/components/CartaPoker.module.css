@@ -1,0 +1,32 @@
+.carta {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(3.2rem, 8vw, 5.3rem);
+  aspect-ratio: 5 / 7;
+  flex: none;
+  border: 2px solid #e6d6af;
+  border-radius: .65rem;
+  background: #fffaf0;
+  color: #1a2b36;
+  box-shadow: 0 .55rem 1rem #0006;
+  animation: revelar .45s ease-out both;
+}
+.roja { color: #ae343f; }
+.oculta { background: repeating-linear-gradient(45deg, #173b52 0 .35rem, #244d62 .35rem .7rem); color: #f1d894; }
+.pendiente { background: #0b332eb8; border: 2px dashed #b3c6a3; color: #d8c8a2; box-shadow: none; }
+.reverso { display: grid; place-items: center; width: 68%; aspect-ratio: 5 / 7; border: 2px solid currentColor; border-radius: .35rem; font-size: 1.7rem; }
+.esquina, .esquinaInferior { position: absolute; display: grid; line-height: 1; font-size: clamp(.75rem, 1.4vw, 1rem); font-weight: 800; }
+.esquina { top: .35rem; left: .4rem; }
+.esquinaInferior { right: .4rem; bottom: .35rem; transform: rotate(180deg); }
+.esquina small, .esquinaInferior small { font-size: .8em; }
+.palo { font-size: clamp(1.75rem, 4vw, 3rem); line-height: 1; }
+@keyframes revelar { from { opacity: 0; transform: translateY(-.7rem) rotateY(75deg); } to { opacity: 1; transform: translateY(0) rotateY(0); } }
+@media (max-width: 480px) {
+  .carta { width: clamp(2.5rem, 13.2vw, 3.2rem); border-radius: .45rem; }
+  .esquina, .esquinaInferior { font-size: .7rem; }
+  .esquina { top: .2rem; left: .25rem; }
+  .esquinaInferior { right: .25rem; bottom: .2rem; }
+  .palo { font-size: 1.55rem; }
+}
+@media (prefers-reduced-motion: reduce) { .carta { animation: none; } }
