@@ -20,7 +20,9 @@ No ejecutar create-next-app ni actualizar paquetes. Si `VITE_API_URL` está vac�
 la interfaz muestra conexión pendiente y no envía solicitudes a un backend ficticio.
 La variable es pública; jamás poner secretos en variables VITE_. Las sesiones y
 ambos tokens viven en memoria: recargar exige login. Blackjack se recupera desde
-el servidor después de volver a iniciar sesión.
+el servidor después de volver a iniciar sesión. Poker también recupera
+la mano activa; la ruleta y Poker muestran pagos y resultados confirmados
+por la API.
 
 ## Verificación
 
@@ -39,7 +41,8 @@ node --test scripts/agent-policy.test.mjs
 Vitest verifica transporte, concurrencia de refresh, cancelación de sesión,
 operaciones idempotentes, formularios/utilidades, modal y Blackjack. Playwright
 usa respuestas interceptadas para repetir recorridos en Chromium de escritorio
-y móvil sin depender de Render. Estos recorridos no certifican una API remota.
+y móvil, incluidos la ruleta, Poker y el saldo, sin depender de Render.
+Estos recorridos no certifican una API remota.
 
 ## Firebase Hosting y Actions
 
