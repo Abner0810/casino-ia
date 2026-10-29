@@ -8,7 +8,7 @@ import { formatearFechaHora } from '@/shared/utils/dates'
 import estilos from './Inicio.module.css'
 
 const ACCESOS = [
-  { a: '/juegos', titulo: 'Juegos', texto: 'Plinko y Blackjack con límites y reglas visibles.', icono: '🎲' },
+  { a: '/juegos', titulo: 'Juegos', texto: 'Elige una mesa y consulta sus reglas.', icono: '🎲' },
   { a: '/billetera', titulo: 'Billetera', texto: 'Saldo simulado, recargas y retiros de prueba.', icono: '💰' },
   { a: '/movimientos', titulo: 'Movimientos', texto: 'Historial completo con filtros y paginación.', icono: '📄' },
 ] as const
@@ -22,10 +22,9 @@ export function InicioPage() {
   return (
     <div className={estilos.pagina}>
       <header className={estilos.bienvenida}>
-        <h1 className={estilos.titulo}>Hola, {usuario?.nombre}</h1>
+        <h1 className={estilos.titulo}>Casino IA</h1>
         <p className={estilos.subtitulo}>
-          Este es tu resumen con <strong>saldo de simulación</strong>. Todos los premios y apuestas quedan registrados
-          en tu historial.
+          Hola, {usuario?.nombre}. Tu saldo y actividad en un solo lugar.
         </p>
       </header>
 

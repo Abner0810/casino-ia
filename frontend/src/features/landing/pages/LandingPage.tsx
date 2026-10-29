@@ -6,7 +6,7 @@ import estilos from './Landing.module.css'
 const PASOS = [
   { titulo: 'Crea tu cuenta', texto: 'Registro con email y contraseña. Sin datos de pago.' },
   { titulo: 'Recarga saldo simulado', texto: 'Añade saldo de prueba desde la billetera del simulador.' },
-  { titulo: 'Juega y revisa', texto: 'Plinko y Blackjack con resultados del servidor y historial completo.' },
+  { titulo: 'Juega y revisa', texto: 'Explora las mesas y consulta tus resultados.' },
 ]
 
 export function LandingPage() {
@@ -17,11 +17,10 @@ export function LandingPage() {
       <section className={estilos.hero} aria-labelledby="titulo-principal">
         <p className={estilos.etiqueta}>Simulador educativo · saldo de prueba</p>
         <h1 id="titulo-principal" className={estilos.titulo}>
-          {env.appName}: Plinko y Blackjack en un simulador transparente
+          {env.appName}
         </h1>
         <p className={estilos.descripcion}>
-          Practica con saldo simulado mientras revisas cada movimiento en tu historial. Los resultados se generan en el
-          servidor y quedan auditados: aquí no se juega con dinero real.
+          Juega con saldo de simulación y revisa tus resultados. Sin dinero real.
         </p>
         <div className={estilos.acciones}>
           {autenticado ? (
@@ -43,7 +42,7 @@ export function LandingPage() {
 
       <section aria-labelledby="titulo-juegos" className={estilos.seccion}>
         <h2 id="titulo-juegos" className={estilos.tituloSeccion}>
-          Dos juegos, reglas claras
+          Explora los juegos
         </h2>
         <div className={estilos.rejilla}>
           <article className={estilos.tarjeta}>
@@ -63,6 +62,14 @@ export function LandingPage() {
               Mesa completa con pedir, plantarse, dividir y doblar. El crupier planta en 17, el blackjack natural paga
               3:2 y el estado de cada mano vive en el servidor.
             </p>
+          </article>
+          <article className={estilos.tarjeta}>
+            <h3 className={estilos.tarjetaTitulo}><span aria-hidden="true">🎡</span> Ruleta clásica</h3>
+            <p className={estilos.tarjetaTexto}>Apuesta a número, color, paridad, docena o columna en la rueda europea. El servidor decide cada giro y registra el resultado.</p>
+          </article>
+          <article className={estilos.tarjeta}>
+            <h3 className={estilos.tarjetaTitulo}><span aria-hidden="true">♠</span> Poker</h3>
+            <p className={estilos.tarjetaTexto}>Texas Hold’em contra la banca: juega tus dos cartas con las comunitarias y decide en cada fase.</p>
           </article>
         </div>
       </section>
