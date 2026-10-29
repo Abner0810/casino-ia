@@ -23,3 +23,11 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CURRENCY
+        value: bob
+      - key: STRIPE_CHECKOUT_BASE_URL
+        value: https://casino-ia-4e7b6.web.app

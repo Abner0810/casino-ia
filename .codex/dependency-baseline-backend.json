@@ -10,6 +10,7 @@
       "express-rate-limit": "^8.0.0",
       "helmet": "^8.1.0",
       "jsonwebtoken": "^9.0.2",
+      "stripe": "^23.0.1",
       "zod": "^3.25.0"
     },
     "devDependencies": {
@@ -23,5 +24,5 @@
       "node": ">=22"
     }
   },
-  "lockSha256": "29236d0a4b33c2d476849a455ccd85a6efd2b8dc43543a3d4e4a4f4676fa0bb7"
+  "lockSha256": "ffd1f235881514e82aa18786542c6f281ebd4744f9a7d1a2ef83e35920522ed7"
 }

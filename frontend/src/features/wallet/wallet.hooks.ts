@@ -43,3 +43,41 @@ export function useRetirar() {
     onSuccess: () => invalidarDatosDeDinero(queryClient),
   })
 }
+
+/** Crea la sesión de Stripe Checkout. El saldo se acredita al confirmar el pago. */
+export function useCrearCheckout() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (monto: number) => walletApi.crearCheckout(monto),
+    onSuccess: () => invalidarDatosDeDinero(queryClient),
+  })
+}
+
+export function usePago(pagoId?: string) {
+  const { usuario } = useSession()
+  return useQuery({
+    queryKey: qk.pago(usuario?.publicId, pagoId),
+    queryFn: () => walletApi.verPago(pagoId!),
+    enabled: Boolean(usuario && pagoId),
+    retry: 0,
+    staleTime: 0,
+  })
+}
+
+/**
+ * Fuerza la conciliación con Stripe. La respuesta se escribe en la caché del
+ * pago para que la página de retorno cambie de PENDIENTE a PAGADO sin esperar
+ * a que el webhook llegue (puede tardar o no estar configurado en local).
+ */
+export function useSincronizarPago() {
+  const queryClient = useQueryClient()
+  const { usuario } = useSession()
+  return useMutation({
+    mutationFn: (pagoId: string) => walletApi.sincronizarPago(pagoId),
+    onSuccess: (pago) => {
+      queryClient.setQueryData(qk.pago(usuario?.publicId, pago.pagoId), pago)
+      void queryClient.invalidateQueries({ queryKey: ['pago'] })
+      invalidarDatosDeDinero(queryClient)
+    },
+  })
+}
