@@ -202,6 +202,8 @@ test('crearCheckout envía centavos, moneda del servidor y URLs de retorno', asy
   assert.equal(resultado.checkoutUrl, 'https://checkout.stripe.com/c/pay/cs_test_nueva');
 
   const { params, options } = llamadas[0];
+  assert.equal(Object.hasOwn(params, 'payment_method_types'), false,
+    'Stripe administra los métodos de pago desde el Dashboard');
   assert.equal(params.line_items[0].price_data.unit_amount, 5050);
   assert.equal(params.line_items[0].price_data.currency, 'bob');
   assert.equal(params.metadata.pagoId, pagoId);

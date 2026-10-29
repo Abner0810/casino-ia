@@ -75,7 +75,6 @@ export async function crearCheckout(userId, { monto }, deps = {}) {
     // así que un reintento manual con la misma clave recupera el resultado.
     const session = await obtenerStripe().checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
       locale: 'es',
       line_items: [{
         quantity: 1,
