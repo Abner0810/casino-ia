@@ -179,10 +179,22 @@ test('consultarPago devuelve 404 genérico para un pago ajeno o inexistente', as
 test('crearCheckout envía centavos, moneda del servidor y URLs de retorno', async () => {
   const pagoId = randomUUID();
   const llamadas = [];
+  const db = {
+    operation: {
+      findUnique: async () => null,
+      create: async ({ data }) => ({ id: 'op-test', ...data }),
+      update: async () => ({}),
+    },
+    pago: {
+      findUnique: async () => null,
+      update: async () => ({}),
+    },
+  };
   const deps = {
-    userTransaction: async (_userId, fn) => fn({}),
+    prisma: db,
+    userTransaction: async (_userId, fn) => fn(db),
     repo: {
-      crearPago: async (_tx, data) => ({ id: pagoId, ...data }),
+      crearPago: async (_tx, data) => ({ id: pagoId, ...data, parametrosStripe: data.parametrosStripe }),
       actualizarSesion: async (_tx, id, sessionId) => ({ id, stripeSessionId: sessionId }),
     },
     getStripe: () => ({
@@ -197,7 +209,7 @@ test('crearCheckout envía centavos, moneda del servidor y URLs de retorno', asy
     }),
   };
 
-  const resultado = await crearCheckout('user-1', { monto: 50.5 }, deps);
+  const resultado = await crearCheckout('user-1', { monto: 50.5 }, deps, { idempotencyKey: 'test-checkout-1' });
   assert.equal(resultado.pagoId, pagoId);
   assert.equal(resultado.checkoutUrl, 'https://checkout.stripe.com/c/pay/cs_test_nueva');
 

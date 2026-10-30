@@ -56,7 +56,7 @@ export type RondaRuleta = Omit<ResultadoRuleta, 'rondaId' | 'gananciaNeta' | 'sa
 export type PartidaPoker = {
   partidaId: string
   version: number
-  estado: 'ACTIVA' | 'GANADA' | 'PERDIDA' | 'EMPATE'
+  estado: 'ACTIVA' | 'GANADA' | 'PERDIDA' | 'EMPATE' | 'RENDIDA'
   fase: 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER' | 'SHOWDOWN'
   cartasJugador: string[]
   cartasBanca: string[]
@@ -71,7 +71,7 @@ export type PartidaPoker = {
   resultado: {
     ganador: 'JUGADOR' | 'BANCA' | 'EMPATE'
     ganadores: string[]
-    motivo: 'SHOWDOWN' | 'RETIRO'
+    motivo: 'SHOWDOWN' | 'RETIRO' | 'BOT_FOLD' | 'MIGRACION_MESA_BOTS'
     manoJugador: string | null
     manoBanca: string | null
     ganancia: number

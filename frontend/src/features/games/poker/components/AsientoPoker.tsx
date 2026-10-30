@@ -17,25 +17,27 @@ type Props = {
 const REVERSO = '🂠'
 
 const etiquetaEstado: Record<JugadorPokerMesa['estado'], string> = {
-  ACTIVO: 'En juego', RETIRADO: 'Se retiró', GANADOR: 'Ganador', PERDEDOR: 'Fuera',
+  ACTIVO: 'En juego', RETIRADO: 'Se retiró', GANADOR: 'Ganador', PERDEDOR: 'Perdedor',
 }
 
 export function AsientoPoker({ jugador, esUsuario = false, turno = false, demora = 0, children }: Props) {
   const cartas: Array<string | null> = jugador.cartas ?? [REVERSO, REVERSO]
-  const estado = esUsuario ? 'Tú' : etiquetaEstado[jugador.estado]
   const nombre = esUsuario ? 'Tú' : jugador.nombre
+  const estadoTexto = esUsuario
+        ? (jugador.estado === 'GANADOR' ? 'Ganador' : jugador.estado === 'PERDEDOR' ? 'Perdedor' : jugador.estado === 'RETIRADO' ? 'Se retiró' : 'En juego')
+        : etiquetaEstado[jugador.estado]
 
   return (
     <article
       className={`${estilos.asiento} ${esUsuario ? estilos.usuario : ''} ${turno ? estilos.turno : ''} ${jugador.estado === 'RETIRADO' || jugador.estado === 'PERDEDOR' ? estilos.fuera : ''} ${jugador.estado === 'GANADOR' ? estilos.ganador : ''}`}
-      aria-label={`${nombre}, ${estado}${turno ? ', en turno' : ''}`}
+      aria-label={`${nombre}, ${estadoTexto}${turno ? ', en turno' : ''}`}
       aria-current={turno ? 'step' : undefined}
     >
       <div className={estilos.identidad}>
-        <span className={estilos.icono} aria-hidden="true">{esUsuario ? '♟' : '♟'}</span>
+        <span className={estilos.icono} aria-hidden="true">♟</span>
         <div className={estilos.textos}>
           <h3>{nombre}</h3>
-          <span className={estilos.estado}>{turno ? (esUsuario ? 'Tu turno' : 'Los bots responden') : estado}</span>
+          <span className={estilos.estado}>{estadoTexto}</span>
         </div>
       </div>
       <div className={estilos.cartas} role="group" aria-label={esUsuario ? 'Tus cartas' : `Cartas de ${nombre}`}>

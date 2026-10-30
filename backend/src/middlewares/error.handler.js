@@ -14,12 +14,19 @@ export const notFoundHandler = (req, res) => {
 export function errorHandler(err, req, res, next) {
   // Errores de negocio/controlados
   if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({
+    if (err.headers && typeof err.headers === 'object') {
+      for (const [k, v] of Object.entries(err.headers)) {
+        try { res.setHeader(k, v); } catch {}
+      }
+    }
+    const body = {
       error: err.message,
       codigo: err.code ?? ({ 400: 'INVALID_REQUEST', 401: 'UNAUTHENTICATED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT' }[err.statusCode] ?? 'REQUEST_FAILED'),
       requestId: req.requestId,
       ...(err.details ? { detalles: err.details } : {}),
-    });
+      ...(err.bodyExtra && typeof err.bodyExtra === 'object' ? err.bodyExtra : {}),
+    };
+    return res.status(err.statusCode).json(body);
   }
 
   // Errores conocidos de Prisma

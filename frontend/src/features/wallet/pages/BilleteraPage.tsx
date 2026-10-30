@@ -62,7 +62,12 @@ export function BilleteraPage() {
     setErrorRecarga(null)
     enviando.current = true
     try {
-      const { checkoutUrl } = await crearCheckout.mutateAsync(montoATexto(montoRecarga))
+      const resultado = await crearCheckout.mutateAsync(montoATexto(montoRecarga))
+      if (!('checkoutUrl' in resultado)) {
+        setErrorOperacion('El checkout sigue iniciándose. Conserva esta pantalla y vuelve a intentarlo en unos segundos.')
+        return
+      }
+      const { checkoutUrl } = resultado
       // Salida al checkout alojado: los datos de tarjeta nunca pasan por la SPA.
       window.location.assign(checkoutUrl)
     } catch (error) {
@@ -90,7 +95,7 @@ export function BilleteraPage() {
     limpiarAvisos()
     try {
       const respuesta = await retirar.mutateAsync(montoATexto(montoRetiro))
-      setExito(`${respuesta.mensaje} Saldo actual: ${formatearBs(respuesta.saldoActual)}.`)
+      setExito(`${respuesta.mensaje ?? 'Retiro completado.'} Saldo actual: ${formatearBs(respuesta.saldoActual ?? respuesta.saldo ?? 0)}.`)
       setMontoRetiro('')
       setModalRetiro(false)
     } catch (error) {
@@ -113,7 +118,7 @@ export function BilleteraPage() {
       await Promise.all([saldo.refetch(), balance.refetch()])
       setRetiroIncierto(false)
       claveIncierta.current = undefined
-      setExito(operacion.response.mensaje)
+      if (operacion.estado === 'CONFIRMADA') setExito(operacion.response.mensaje)
     } catch {
       setErrorOperacion('La operación todavía no puede confirmarse. Espera y vuelve a consultar; no la repitas.')
     } finally { enviando.current = false }

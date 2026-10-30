@@ -3,7 +3,7 @@ import estilos from './CartaPoker.module.css'
 type Props = { carta: string | null; etiqueta: string; demora?: number; compacta?: boolean }
 
 export function CartaPoker({ carta, etiqueta, demora = 0, compacta = false }: Props) {
-  const oculta = carta === '🂠'
+  const oculta = carta === '🂠' || carta === '??'
   const pendiente = carta === null
   const roja = carta !== null && /[♥♦]/u.test(carta)
   const valor = !pendiente && !oculta ? carta.slice(0, -1) : ''
