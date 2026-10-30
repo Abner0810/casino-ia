@@ -9,7 +9,7 @@ import * as repo from './poker.repository.js';
 
 const RANGOS = ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2'];
 const PALOS = ['♠', '♣', '♥', '♦'];
-const OCULTA = '??';
+const OCULTA = '🂠';
 const valores = { A: 14, K: 13, Q: 12, J: 11 };
 
 function elegirNombresBots() {
