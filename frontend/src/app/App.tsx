@@ -17,6 +17,11 @@ import { JuegosPage } from '@/features/games/lobby/pages/JuegosPage'
 // Los juegos se cargan por ruta: el tablero y la mesa no pesan en el inicio.
 const PlinkoPage = lazy(() => import('@/features/games/plinko/pages/PlinkoPage'))
 const BlackjackPage = lazy(() => import('@/features/games/blackjack/pages/BlackjackPage'))
+const RoulettePage = lazy(() => import('@/features/games/roulette/pages/RoulettePage'))
+const PokerPage = lazy(() => import('@/features/games/poker/pages/PokerPage'))
+const RetornoPagoPage = lazy(() =>
+  import('@/features/wallet/pages/RetornoPagoPage').then((modulo) => ({ default: modulo.RetornoPagoPage })),
+)
 
 export default function App() {
   return (
@@ -32,6 +37,14 @@ export default function App() {
           <Route path="/inicio" element={<InicioPage />} />
           <Route path="/perfil" element={<PerfilPage />} />
           <Route path="/billetera" element={<BilleteraPage />} />
+          <Route
+            path="/billetera/retorno"
+            element={
+              <Suspense fallback={<Cargando mensaje="Consultando el pago…" />}>
+                <RetornoPagoPage />
+              </Suspense>
+            }
+          />
           <Route path="/movimientos" element={<MovimientosPage />} />
           <Route path="/juegos" element={<JuegosPage />} />
           <Route
@@ -50,6 +63,8 @@ export default function App() {
               </Suspense>
             }
           />
+          <Route path="/juegos/ruleta" element={<Suspense fallback={<Cargando mensaje="Preparando la ruleta…" />}><RoulettePage /></Suspense>} />
+          <Route path="/juegos/poker" element={<Suspense fallback={<Cargando mensaje="Preparando Poker…" />}><PokerPage /></Suspense>} />
         </Route>
       </Route>
 

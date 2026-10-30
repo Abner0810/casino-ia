@@ -33,3 +33,12 @@ export const limiterJuegos = rateLimit({
   legacyHeaders: false,
   handler: mensaje(30),
 });
+
+// Crear sesiones de pago es costoso (llamada a Stripe): 10/min por IP.
+export const limiterPagos = rateLimit({
+  windowMs: 60_000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: mensaje(10),
+});

@@ -5,12 +5,12 @@ services:
     rootDir: backend
     branch: main
     autoDeployTrigger: off
-    buildCommand: npm ci && npm run build && npm run migrate:deploy
+    buildCommand: node -e "if (process.version !== 'v22.23.4') process.exit(1)" && npm ci && npm run build && npm run migrate:deploy
     startCommand: node src/server.js
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
-        value: "22"
+        value: "22.23.4"
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
@@ -23,3 +23,11 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CURRENCY
+        value: bob
+      - key: STRIPE_CHECKOUT_BASE_URL
+        value: https://casino-ia-4e7b6.web.app

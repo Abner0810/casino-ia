@@ -48,7 +48,7 @@ export async function debitar(tx, userId, monto, juego, descripcion, tipo = 'APU
 /**
  * Acredita saldo (premio, devolución, depósito) y registra el movimiento.
  */
-export async function acreditar(tx, userId, monto, juego, descripcion, tipo = 'PREMIO') {
+export async function acreditar(tx, userId, monto, juego, descripcion, tipo = 'PREMIO', extra = {}) {
   const montoDec = toDecimal(monto);
   validateAmount(montoDec);
   const limit = toDecimal('9999999999.99').minus(montoDec);
@@ -68,6 +68,7 @@ export async function acreditar(tx, userId, monto, juego, descripcion, tipo = 'P
       saldoDespues: despues.saldo,
       juego: juego ?? null,
       descripcion,
+      ...(extra.pagoId ? { pagoId: extra.pagoId } : {}),
     },
   });
   return despues.saldo;

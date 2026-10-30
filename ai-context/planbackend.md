@@ -287,3 +287,7 @@ services:
 ---
 
 Decisiones acordadas: DTOs con Zod ejecutados por middleware genérico · auth/authZ en middleware · negocio en service · Prisma en repository · JWT access **30 min** · bcrypt **costo 12** · **Argon2id one-time** como publicId anti-IDOR.
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

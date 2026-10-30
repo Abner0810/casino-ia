@@ -1,0 +1,1 @@
+# Intentionally empty: configuration tests provide all variables explicitly.

@@ -1,0 +1,40 @@
+.asiento {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: .5rem;
+  width: min(100%, 12.5rem);
+  min-width: 0;
+  padding: .8rem .65rem;
+  border: 1px solid #ffffff20;
+  border-radius: 1rem;
+  background: #071d20b8;
+  color: #f7f3e8;
+  box-shadow: 0 .55rem 1.2rem #00110e55;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, opacity .2s ease;
+}
+.usuario { border-color: #e3c67c88; background: #122b27e8; }
+.turno { border-color: #f4d579; box-shadow: 0 0 0 2px #f4d57980, 0 .6rem 1.5rem #0006; transform: translateY(-.15rem); }
+.ganador { border-color: #8ae1ad; box-shadow: 0 0 1.5rem #63dd9c55; }
+.fuera { opacity: .58; filter: saturate(.65); }
+.identidad { display: flex; align-items: center; gap: .55rem; width: 100%; min-width: 0; }
+.icono { display: grid; place-items: center; flex: none; width: 2.2rem; height: 2.2rem; border: 1px solid #f1d89466; border-radius: 50%; background: #ffffff0d; color: #f1d894; font-size: 1.15rem; }
+.textos { min-width: 0; text-align: left; }
+.textos h3 { margin: 0; overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
+.estado { display: block; color: #c6d5cc; font-size: .72rem; }
+.cartas { display: flex; justify-content: center; gap: .25rem; min-height: 4rem; }
+.cartas > * { width: clamp(2.35rem, 4vw, 3.15rem); }
+.aporte { margin: 0; color: #d1ded7; font-size: .75rem; }
+.aporte strong { color: #fff; }
+.mano { margin: 0; color: #ffe6a3; font-size: .75rem; font-weight: 700; text-align: center; }
+@media (max-width: 600px) {
+  .asiento { width: 100%; padding: .55rem .35rem; gap: .35rem; border-radius: .75rem; }
+  .identidad { justify-content: center; gap: .3rem; }
+  .icono { width: 1.75rem; height: 1.75rem; font-size: .95rem; }
+  .textos h3 { font-size: .75rem; }
+  .estado { font-size: .64rem; }
+  .cartas { min-height: 3.3rem; gap: .15rem; }
+  .cartas > * { width: clamp(1.8rem, 9vw, 2.6rem); }
+  .aporte, .mano { font-size: .65rem; }
+}
+@media (prefers-reduced-motion: reduce) { .asiento { transition: none; } }

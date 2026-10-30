@@ -3,7 +3,7 @@ import { qk } from '@/shared/api/queryKeys'
 import { invalidarDatosDeDinero } from '@/shared/api/invalidaciones'
 import { useSession } from '@/features/auth/session.context'
 import { gamesApi } from './games.api'
-import type { AccionBlackjack, Juego, ResultadoPlinko } from './games.api'
+import type { AccionBlackjack, AccionPoker, Juego, ResultadoPlinko, TipoApuestaRuleta } from './games.api'
 import type { Riesgo } from './plinko/plinko.constantes'
 
 /**
@@ -89,6 +89,65 @@ export function useAccionBlackjack() {
     onSuccess: () => {
       invalidarDatosDeDinero(queryClient)
       void queryClient.invalidateQueries({ queryKey: qk.blackjackRondas(usuario?.publicId) })
+    },
+  })
+}
+
+export function useConfiguracionRuleta() {
+  const { usuario } = useSession()
+  return useQuery({ queryKey: ['roulette', 'config', usuario?.publicId], queryFn: gamesApi.roulette.configuracion, enabled: Boolean(usuario) })
+}
+
+export function useRondasRuleta() {
+  const { usuario } = useSession()
+  return useQuery({ queryKey: ['roulette', 'rondas', usuario?.publicId], queryFn: gamesApi.roulette.rondas, enabled: Boolean(usuario) })
+}
+
+export function useApostarRuleta() {
+  const queryClient = useQueryClient()
+  const { usuario } = useSession()
+  return useMutation({
+    mutationFn: ({ apuesta, tipo, seleccion }: { apuesta: number; tipo: TipoApuestaRuleta; seleccion: number | string }) => gamesApi.roulette.apostar(apuesta, tipo, seleccion),
+    onSuccess: () => {
+      invalidarDatosDeDinero(queryClient)
+      void queryClient.invalidateQueries({ queryKey: ['roulette', 'rondas', usuario?.publicId] })
+      void queryClient.invalidateQueries({ queryKey: ['acceso'] })
+    },
+  })
+}
+
+export function useConfiguracionPoker() {
+  const { usuario } = useSession()
+  return useQuery({ queryKey: ['poker', 'config', usuario?.publicId], queryFn: gamesApi.poker.configuracion, enabled: Boolean(usuario) })
+}
+
+export function useRondasPoker() {
+  const { usuario } = useSession()
+  return useQuery({ queryKey: ['poker', 'rondas', usuario?.publicId], queryFn: gamesApi.poker.rondas, enabled: Boolean(usuario) })
+}
+
+export function useIniciarPoker() {
+  const queryClient = useQueryClient()
+  const { usuario } = useSession()
+  return useMutation({
+    mutationFn: (apuesta: number) => gamesApi.poker.iniciar(apuesta),
+    onSuccess: () => {
+      invalidarDatosDeDinero(queryClient)
+      void queryClient.invalidateQueries({ queryKey: ['poker', 'rondas', usuario?.publicId] })
+      void queryClient.invalidateQueries({ queryKey: ['acceso'] })
+    },
+  })
+}
+
+export function useAccionPoker() {
+  const queryClient = useQueryClient()
+  const { usuario } = useSession()
+  return useMutation({
+    mutationFn: ({ partidaId, version, accion }: { partidaId: string; version: number; accion: AccionPoker }) => gamesApi.poker.accion(partidaId, version, accion),
+    onSuccess: () => {
+      invalidarDatosDeDinero(queryClient)
+      void queryClient.invalidateQueries({ queryKey: ['poker', 'rondas', usuario?.publicId] })
+      void queryClient.invalidateQueries({ queryKey: ['acceso'] })
     },
   })
 }

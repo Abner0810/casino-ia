@@ -103,3 +103,7 @@ Referencias oficiales consultadas:
 - [Agentes OpenCode](https://opencode.ai/docs/agents/)
 - [Plugins OpenCode](https://opencode.ai/docs/plugins/)
 - [Permisos OpenCode](https://opencode.ai/docs/permissions/)
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

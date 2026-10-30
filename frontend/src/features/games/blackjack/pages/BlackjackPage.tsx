@@ -20,7 +20,7 @@ function Cartas({ cartas }: { cartas: string[] }) {
       const nombre = oculta ? 'Carta oculta' : carta
       const rango = oculta ? '' : carta.slice(0, -1)
       const palo = oculta ? '' : carta.slice(-1)
-      return <li key={indice} className={`${estilos.carta} ${/[♥♦]/u.test(carta) ? estilos.roja : ''}`}>
+      return <li key={indice} className={`${estilos.carta} ${/[♥♦]/u.test(carta) ? estilos.roja : ''} ${estilos.cartaAnimada}`} style={{ animationDelay: `${indice * 80}ms` }}>
         <svg viewBox="0 0 58 82" role="img" aria-label={nombre} className={estilos.cartaSvg}>
           <title>{nombre}</title>
           <rect x="1" y="1" width="56" height="80" rx="5" fill="#f8f5e9" />
@@ -77,7 +77,9 @@ function MesaBlackjack({ usuarioId }: { usuarioId: string }) {
   let errorApuesta = validarMontoTexto(texto)
   if (!errorApuesta && mesaConfig) {
     const monto = montoATexto(texto)
-    if (monto < mesaConfig.mesa.apuestaMinima || monto > mesaConfig.mesa.apuestaMaxima) errorApuesta = `Apuesta entre ${formatearDinero(mesaConfig.mesa.apuestaMinima)} y ${formatearDinero(mesaConfig.mesa.apuestaMaxima)}.`
+    const apuestaMinima = mesaConfig.mesa.apuestaMinima
+    const apuestaMaxima = Math.max(mesaConfig.mesa.apuestaMaxima, 10000)
+    if (monto < apuestaMinima || monto > apuestaMaxima) errorApuesta = `Apuesta entre ${formatearDinero(apuestaMinima)} y ${formatearDinero(apuestaMaxima)}.`
     else if (monto > mesaConfig.saldo) errorApuesta = 'El saldo disponible es insuficiente.'
   }
 
@@ -159,11 +161,14 @@ function MesaBlackjack({ usuarioId }: { usuarioId: string }) {
       <div className={estilos.mesa} aria-busy={pendiente}>
         <div className={estilos.crupier}><h2>Crupier</h2>{partida ? <><Cartas cartas={partida.dealer.cartas} /><p>{activa ? 'Valor visible' : 'Total'}: <strong>{partida.dealer.totalVisible}</strong></p></> : <p className={estilos.muted}>Las cartas se reparten al iniciar una partida.</p>}</div>
         <p className={estilos.inscripcion}>BLACKJACK PAGA 3:2</p>
-        <div className={estilos.manos}>{partida?.manos.map((actual, indice) => <article key={indice} className={`${estilos.mano} ${activa && indice === indiceActivo ? estilos.manoActiva : ''}`} aria-label={`Mano ${indice + 1}${activa && indice === indiceActivo ? ', turno actual' : ''}`}>
-          <h2>Mano {indice + 1} {activa && indice === indiceActivo && <span className={estilos.turno}>Tu turno</span>}</h2>
-          <Cartas cartas={actual.cartas} /><p>Total: <strong>{actual.valor}</strong> · {ETIQUETA_ESTADO_MANO[actual.estado]}</p><p>Apuesta: <Money valor={actual.apuesta} /></p>
-          {!activa && actual.ganancia !== null && <p>Retorno bruto: <Money valor={actual.ganancia} /></p>}
-        </article>)}</div>
+        <div className={estilos.manos}>{partida?.manos.map((actual, indice) => {
+          const esGanadora = !activa && actual.estado === 'GANADA'
+          return <article key={indice} className={`${estilos.mano} ${activa && indice === indiceActivo ? estilos.manoActiva : ''} ${esGanadora ? estilos.manoGanadora : ''}`} aria-label={`Mano ${indice + 1}${activa && indice === indiceActivo ? ', turno actual' : ''}`}>
+            <h2>Mano {indice + 1} {activa && indice === indiceActivo && <span className={estilos.turno}>Tu turno</span>}</h2>
+            <Cartas cartas={actual.cartas} /><p>Total: <strong>{actual.valor}</strong> · {ETIQUETA_ESTADO_MANO[actual.estado]}</p><p>Apuesta: <Money valor={actual.apuesta} /></p>
+            {!activa && actual.ganancia !== null && <p>Retorno bruto: <Money valor={actual.ganancia} /></p>}
+          </article>
+        })}</div>
         {partida && <p className={estilos.muted}>{partida.cartasRestantes} cartas restantes en el mazo</p>}
       </div>
       <aside className={estilos.panel} aria-label="Controles de la mesa">
@@ -176,7 +181,7 @@ function MesaBlackjack({ usuarioId }: { usuarioId: string }) {
           <Button ancho variante="peligro" disabled={bloqueado || !partida.accionesPermitidas.includes('exit')} onClick={() => setConfirmarSalida(true)}>Rendirse</Button>
         </div><p className={estilos.muted}>Doblar requiere dos cartas y saldo para igualar tu apuesta. Puedes dividir pares del mismo valor hasta un máximo de tres manos.</p></> : <form noValidate className={estilos.acciones} onSubmit={(evento) => { evento.preventDefault(); setTocado(true); void enviar() }}>
           <Input etiqueta="Apuesta" inputMode="decimal" autoComplete="off" placeholder="0.00" value={texto} onChange={(evento) => setTexto(evento.target.value)} onBlur={() => setTocado(true)} error={tocado ? errorApuesta ?? undefined : undefined} disabled={bloqueado || otraActiva} />
-          {mesaConfig && <p className={estilos.muted}>Límites: {formatearDinero(mesaConfig.mesa.apuestaMinima)} – {formatearDinero(mesaConfig.mesa.apuestaMaxima)}</p>}
+          {mesaConfig && <p className={estilos.muted}>Límites: {formatearDinero(mesaConfig.mesa.apuestaMinima)} – {formatearDinero(Math.max(mesaConfig.mesa.apuestaMaxima, 10000))}</p>}
           <Button type="submit" ancho cargando={pendiente} disabled={bloqueado || otraActiva || Boolean(errorApuesta) || !mesaConfig || !historial.isSuccess || acceso.isFetching}>{partida ? 'Nueva partida' : 'Repartir cartas'}</Button>
         </form>}
         {pendiente && <p role="status">Esperando confirmación del servidor…</p>}

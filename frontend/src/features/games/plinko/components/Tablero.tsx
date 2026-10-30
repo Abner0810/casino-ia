@@ -18,6 +18,11 @@ const CASILLA_ALTO = 88
 
 type Punto = { x: number; y: number }
 
+type BolaAnim = {
+  ruta: string[]
+  paso: number
+}
+
 /** Niveles 0..9 de la bola: empieza arriba y el paso final cae en la casilla. */
 function posicionesDeRuta(ruta: string[]): Punto[] {
   const posiciones: Punto[] = [{ x: CENTRO, y: Y_INICIO }]
@@ -57,14 +62,11 @@ const CLAVIJAS = (() => {
 type Props = {
   riesgo: Riesgo
   multiplicadores: number[]
-  /** Secuencia del servidor ('I'/'D'); null mientras no hay resultado. */
-  ruta: string[] | null
-  /** Paso actual de la animación (0..PLINKO_FILAS). */
-  paso: number
+  /** Múltiples bolas en animación/resultados. */
+  bolas?: BolaAnim[]
 }
 
-export function Tablero({ riesgo, multiplicadores, ruta, paso }: Props) {
-  const bola = ruta ? posicionesDeRuta(ruta)[Math.min(paso, PLINKO_FILAS)] : null
+export function Tablero({ riesgo, multiplicadores, bolas = [] }: Props) {
   const yCasillas = Y_INICIO + PLINKO_FILAS * PASO_Y
 
   return (
@@ -107,11 +109,15 @@ export function Tablero({ riesgo, multiplicadores, ruta, paso }: Props) {
         )
       })}
 
-      {bola && (
-        <g className={estilos.bolaGrupo} style={{ transform: `translate(${bola.x}px, ${bola.y}px)` }}>
-          <circle className={estilos.bola} r={RADIO_BOLA} />
-        </g>
-      )}
+      {bolas.map((bola, idx) => {
+        const posiciones = posicionesDeRuta(bola.ruta)
+        const pos = posiciones[Math.min(bola.paso, PLINKO_FILAS)]
+        return (
+          <g key={idx} className={estilos.bolaGrupo} style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, opacity: 0.9 }}>
+            <circle className={estilos.bola} r={RADIO_BOLA} />
+          </g>
+        )
+      })}
     </svg>
   )
 }

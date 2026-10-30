@@ -12,3 +12,9 @@ firebase-debug.log
 playwright-report/
 test-results/
 frontend/.cache/
+
+# Copias de trabajo locales y estado personal de Obsidian
+/.release-main/
+/.profile-purple-push/
+/.obsidian/workspace.json
+/.obsidian/workspace-mobile.json

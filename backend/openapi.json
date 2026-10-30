@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Casino Simulador API",
-    "version": "1.1.0",
-    "description": "Créditos simulados. Bearer access 30 min y refresh opaco 7 días en JSON. Sesión del navegador solo en memoria en la primera entrega. Mutaciones monetarias exigen Idempotency-Key; acciones Blackjack exigen version. Todas las fechas llevan zona. Nuevos requisitos de headers/body son cambios de contrato respecto a 1.0."
+    "version": "1.2.0",
+    "description": "Créditos simulados. Bearer access 30 min y refresh opaco 7 días en JSON. Sesión del navegador solo en memoria en la primera entrega. Mutaciones monetarias exigen Idempotency-Key; acciones Blackjack y Poker exigen version. Todas las fechas llevan zona."
   },
   "servers": [
     {
@@ -945,7 +945,9 @@
               "type": "string",
               "enum": [
                 "plinko",
-                "blackjack"
+                "blackjack",
+                "roulette",
+                "poker"
               ]
             }
           }
@@ -3050,6 +3052,960 @@
         }
       }
     },
+    "/api/games/roulette/config": {
+      "get": {
+        "operationId": "get__api_games_roulette_config",
+        "summary": "Reglas y pagos de ruleta europea",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouletteConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/roulette/bet": {
+      "post": {
+        "operationId": "post__api_games_roulette_bet",
+        "summary": "Resuelve una apuesta de ruleta",
+        "description": "El cero pierde apuestas externas. El retorno bruto usa multiplicadores 36, 2 o 3 según tipo.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "description": "Clave por intención y usuario. Reutilizar con el mismo body y recurso recupera la respuesta original; otro payload produce 409. No se purgan claves automáticamente."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouletteBet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouletteResult"
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "boolean"
+                },
+                "description": "true si devuelve la respuesta almacenada, sin nuevos efectos."
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/roulette/rounds": {
+      "get": {
+        "operationId": "get__api_games_roulette_rounds",
+        "summary": "Últimas diez rondas de ruleta propias",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RouletteRound"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/poker/config": {
+      "get": {
+        "operationId": "get__api_games_poker_config",
+        "summary": "Límites y reglas de Texas Hold’em",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PokerConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/poker/start": {
+      "post": {
+        "operationId": "post__api_games_poker_start",
+        "summary": "Abre una partida de Texas Hold’em",
+        "description": "Una partida activa por usuario. El mazo permanece solo en servidor.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "description": "Clave por intención y usuario. Reutilizar con el mismo body y recurso recupera la respuesta original; otro payload produce 409. No se purgan claves automáticamente."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PokerStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PokerGame"
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "boolean"
+                },
+                "description": "true si devuelve la respuesta almacenada, sin nuevos efectos."
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/poker/active": {
+      "get": {
+        "operationId": "get__api_games_poker_active",
+        "summary": "Recupera partida de póker activa",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "partida": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/PokerGame"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "partida"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/poker/rounds": {
+      "get": {
+        "operationId": "get__api_games_poker_rounds",
+        "summary": "Últimas diez partidas de póker propias",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PokerRound"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/poker/{id}": {
+      "get": {
+        "operationId": "get__api_games_poker_id_",
+        "summary": "Consulta partida de póker propia",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PokerGame"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/poker/{id}/action": {
+      "post": {
+        "operationId": "post__api_games_poker_id_action",
+        "summary": "Ejecuta una acción de Texas Hold’em",
+        "description": "version obsoleta produce 409 STALE_VERSION. Repetir misma clave y body recupera respuesta sin nuevos efectos.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "description": "Clave por intención y usuario. Reutilizar con el mismo body y recurso recupera la respuesta original; otro payload produce 409. No se purgan claves automáticamente."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PokerAction"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PokerGame"
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "boolean"
+                },
+                "description": "true si devuelve la respuesta almacenada, sin nuevos efectos."
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/operations/{key}": {
       "get": {
         "operationId": "get__api_operations_key_",
@@ -3142,6 +4098,408 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/checkout": {
+      "post": {
+        "operationId": "post__api_payments_checkout",
+        "summary": "Crea una sesión de Stripe Checkout (modo test, BOB)",
+        "description": "Recarga de 5 a 500 Bs. Devuelve checkoutUrl para pagar en el dominio de Stripe; no se reciben datos de tarjeta. Requiere Idempotency-Key; reutilizarla con el mismo body devuelve la misma sesión. 503 PAYMENTS_NOT_CONFIGURED si el entorno no tiene clave de Stripe. El saldo NO se acredita aquí.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_-]+$"
+            },
+            "description": "Clave por intención y usuario. Reutilizar con el mismo body y recurso recupera la respuesta original; otro payload produce 409. No se purgan claves automáticamente."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagoCheckoutInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagoCheckout"
+                }
+              }
+            },
+            "headers": {
+              "Idempotency-Replayed": {
+                "schema": {
+                  "type": "boolean"
+                },
+                "description": "true si devuelve la respuesta almacenada, sin nuevos efectos."
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/{id}": {
+      "get": {
+        "operationId": "get__api_payments_id_",
+        "summary": "Consulta el estado de un pago propio",
+        "description": "Solo el dueño del pago puede consultarlo; un id ajeno o inexistente responde 404 genérico. Una sesión abandonada permanece PENDIENTE hasta EXPIRADO.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pago"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/{id}/sync": {
+      "get": {
+        "operationId": "get__api_payments_id_sync",
+        "summary": "Reconcilia un pago pendiente contra Stripe",
+        "description": "Si seguía PENDIENTE, consulta la sesión en Stripe y, si está pagada e íntegra, acredita el saldo una sola vez (idempotente con el webhook). Útil al volver del checkout.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pago"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/webhook": {
+      "post": {
+        "operationId": "post_api_payments_webhook",
+        "summary": "Webhook firmado de Stripe (sin auth, cuerpo crudo)",
+        "description": "Fuente de verdad de la acreditación. Stripe firma el cuerpo crudo en el header stripe-signature. Un importe o moneda que no coincide con el Pago no acredita. Los eventos ajenos a checkout se ignoran con 200. Errores transitorios responden 500 para que Stripe reintente; la acreditación es idempotente.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Evento de Stripe (checkout.session.completed, async_payment_succeeded/failed, expired, etc.)."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evento procesado o ignorado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "received": {
+                      "const": true
+                    },
+                    "estado": {
+                      "type": "string"
+                    },
+                    "acreditado": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "received"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Falta la firma o es inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo transitorio; Stripe reintentará",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -4126,6 +5484,470 @@
           "cerradaEn"
         ]
       },
+      "RouletteBet": {
+        "type": "object",
+        "properties": {
+          "apuesta": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1000,
+            "multipleOf": 0.01
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "pleno",
+              "color",
+              "paridad",
+              "docena",
+              "columna"
+            ]
+          },
+          "seleccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 36
+              }
+            ]
+          }
+        },
+        "required": [
+          "apuesta",
+          "tipo",
+          "seleccion"
+        ],
+        "example": {
+          "apuesta": 10,
+          "tipo": "color",
+          "seleccion": "rojo"
+        }
+      },
+      "RouletteConfig": {
+        "type": "object",
+        "properties": {
+          "apuestaMinima": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "apuestaMaxima": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "pagos": {
+            "type": "object",
+            "properties": {
+              "pleno": {
+                "const": 36
+              },
+              "color": {
+                "const": 2
+              },
+              "paridad": {
+                "const": 2
+              },
+              "docena": {
+                "const": 3
+              },
+              "columna": {
+                "const": 3
+              }
+            },
+            "required": [
+              "pleno",
+              "color",
+              "paridad",
+              "docena",
+              "columna"
+            ]
+          }
+        },
+        "required": [
+          "apuestaMinima",
+          "apuestaMaxima",
+          "pagos"
+        ]
+      },
+      "RouletteResult": {
+        "type": "object",
+        "properties": {
+          "rondaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 36
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "rojo",
+              "negro",
+              "verde"
+            ]
+          },
+          "apuesta": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "seleccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ]
+          },
+          "multiplicador": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ganancia": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "gananciaNeta": {
+            "type": "number"
+          },
+          "saldoActual": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "rondaId",
+          "numero",
+          "color",
+          "apuesta",
+          "tipo",
+          "seleccion",
+          "multiplicador",
+          "ganancia",
+          "gananciaNeta",
+          "saldoActual",
+          "operationId"
+        ]
+      },
+      "RouletteRound": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "color": {
+            "type": "string"
+          },
+          "apuesta": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "seleccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ]
+          },
+          "multiplicador": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ganancia": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "numero",
+          "color",
+          "apuesta",
+          "tipo",
+          "seleccion",
+          "multiplicador",
+          "ganancia",
+          "fecha"
+        ]
+      },
+      "PokerStart": {
+        "type": "object",
+        "properties": {
+          "apuesta": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 1000,
+            "multipleOf": 0.01
+          }
+        },
+        "required": [
+          "apuesta"
+        ],
+        "example": {
+          "apuesta": 10
+        }
+      },
+      "PokerAction": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accion": {
+            "type": "string",
+            "enum": [
+              "check",
+              "raise",
+              "fold"
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "accion"
+        ],
+        "example": {
+          "version": 0,
+          "accion": "check"
+        }
+      },
+      "PokerConfig": {
+        "type": "object",
+        "properties": {
+          "apuestaMinima": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "apuestaMaxima": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "maxSubidas": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reglas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "apuestaMinima",
+          "apuestaMaxima",
+          "maxSubidas",
+          "reglas"
+        ]
+      },
+      "PokerGame": {
+        "type": "object",
+        "properties": {
+          "partidaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estado": {
+            "$ref": "#/components/schemas/GameState"
+          },
+          "fase": {
+            "type": "string",
+            "enum": [
+              "PREFLOP",
+              "FLOP",
+              "TURN",
+              "RIVER",
+              "SHOWDOWN"
+            ]
+          },
+          "cartasJugador": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cartasBanca": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "comunitarias": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "apuestaBase": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "apuestaTotal": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "bote": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "accionesPermitidas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "check",
+                "raise",
+                "fold"
+              ]
+            }
+          },
+          "saldoActual": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "resultado": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "partidaId",
+          "version",
+          "estado",
+          "fase",
+          "cartasJugador",
+          "cartasBanca",
+          "comunitarias",
+          "apuestaBase",
+          "apuestaTotal",
+          "bote",
+          "accionesPermitidas",
+          "saldoActual",
+          "resultado"
+        ]
+      },
+      "PokerRound": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "apuesta": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "apuestaTotal": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "bote": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "estado": {
+            "$ref": "#/components/schemas/GameState"
+          },
+          "fase": {
+            "type": "string"
+          },
+          "manoJugador": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manoBanca": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ganancia": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cerradaEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "apuesta",
+          "apuestaTotal",
+          "bote",
+          "estado",
+          "fase",
+          "manoJugador",
+          "manoBanca",
+          "ganancia",
+          "creadaEn",
+          "cerradaEn"
+        ]
+      },
       "Operation": {
         "type": "object",
         "properties": {
@@ -4159,6 +5981,113 @@
           "createdAt",
           "estado"
         ]
+      },
+      "PagoCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "monto": {
+            "type": "number",
+            "minimum": 5,
+            "maximum": 500,
+            "multipleOf": 0.01,
+            "description": "Recarga en bolivianos (BOB). La moneda la fija el servidor."
+          }
+        },
+        "required": [
+          "monto"
+        ],
+        "example": {
+          "monto": 50
+        }
+      },
+      "PagoCheckout": {
+        "type": "object",
+        "properties": {
+          "pagoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiraEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "pagoId",
+          "checkoutUrl",
+          "expiraEn",
+          "operationId"
+        ],
+        "example": {
+          "pagoId": "bd61d740-589b-48a6-98e7-b07f93040b4e",
+          "checkoutUrl": "https://checkout.stripe.com/c/pay/cs_test_example",
+          "expiraEn": "2026-10-28T18:30:00.000Z",
+          "operationId": "0f7e1a52-6a52-4f0e-9f0e-6a524f0e9f0e"
+        }
+      },
+      "Pago": {
+        "type": "object",
+        "properties": {
+          "pagoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "PENDIENTE",
+              "PAGADO",
+              "FALLIDO",
+              "EXPIRADO"
+            ]
+          },
+          "monto": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "moneda": {
+            "type": "string",
+            "enum": [
+              "bob"
+            ]
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pagadoEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "pagoId",
+          "estado",
+          "monto",
+          "moneda",
+          "creadoEn",
+          "pagadoEn"
+        ],
+        "example": {
+          "pagoId": "bd61d740-589b-48a6-98e7-b07f93040b4e",
+          "estado": "PAGADO",
+          "monto": 50,
+          "moneda": "bob",
+          "creadoEn": "2026-10-28T18:00:00.000Z",
+          "pagadoEn": "2026-10-28T18:02:11.000Z"
+        }
       }
     }
   }
