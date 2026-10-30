@@ -104,6 +104,31 @@ describe('recarga con Stripe', () => {
   })
 })
 
+describe('límite de retiro', () => {
+  it('bloquea importes superiores a 500 y permite confirmar el límite exacto', async () => {
+    const user = userEvent.setup()
+    vi.mocked(http).mockImplementation(async (ruta) => {
+      if (ruta === 'wallet') return { ...SALDO, saldo: 1000, totalDisponible: 1000 }
+      if (ruta === 'wallet/balance') return { ...BALANCE, saldo: 1000, total: 1000 }
+      if (ruta === 'transactions/withdraw') return { mensaje: 'Retiro completado', saldoActual: 500 }
+      throw new Error(`Petición inesperada: ${ruta}`)
+    })
+    renderizarBilletera()
+    const monto = await screen.findByLabelText('Monto a retirar (máx. Bs 500,00)')
+    await user.type(monto, '500.01')
+    await user.click(screen.getByRole('button', { name: 'Continuar con el retiro' }))
+    expect(await screen.findByText('El monto máximo por retiro es Bs 500,00')).toBeVisible()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(vi.mocked(http).mock.calls.some(([ruta]) => ruta === 'transactions/withdraw')).toBe(false)
+
+    await user.clear(monto)
+    await user.type(monto, '500')
+    await user.click(screen.getByRole('button', { name: 'Continuar con el retiro' }))
+    await user.click(screen.getByRole('button', { name: 'Confirmar retiro' }))
+    await waitFor(() => expect(vi.mocked(http).mock.calls.find(([ruta]) => ruta === 'transactions/withdraw')?.[1]?.body).toEqual({ monto: 500, metodo: 'simulado' }))
+  })
+})
+
 describe('retiro con resultado incierto', () => {
   it('bloquea ambos formularios y conserva el bloqueo ante 404 hasta confirmar la operación exacta', async () => {
     const user = userEvent.setup()

@@ -11,6 +11,7 @@ import { env } from '../../config/env.js';
 import { toDecimal, toNumber } from '../../shared/utils/money.js';
 import { acreditar, debitar } from '../../shared/utils/ledger.js';
 import * as repo from './transaction.repository.js';
+import { RETIRO_MAXIMO } from './transaction.config.js';
 
 export async function depositar(userId, { monto, metodo }) {
   // En producción la recarga real pasa por Stripe Checkout.
@@ -38,6 +39,9 @@ export async function depositar(userId, { monto, metodo }) {
 
 export async function retirar(userId, { monto, metodo }) {
   const montoDec = toDecimal(monto);
+  if (montoDec.gt(RETIRO_MAXIMO)) {
+    throw new ApiError(400, `El monto máximo por retiro es ${RETIRO_MAXIMO}`, undefined, 'WITHDRAWAL_LIMIT');
+  }
 
   const saldoFinal = await userTransaction(userId, async (tx) => {
     return debitar(

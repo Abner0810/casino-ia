@@ -1429,7 +1429,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TransactionInput"
+                "$ref": "#/components/schemas/WithdrawalInput"
               }
             }
           }
@@ -4994,6 +4994,31 @@
           "metodo": "simulado"
         }
       },
+      "WithdrawalInput": {
+        "type": "object",
+        "properties": {
+          "monto": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 500,
+            "multipleOf": 0.01
+          },
+          "metodo": {
+            "type": "string",
+            "enum": [
+              "simulado"
+            ],
+            "default": "simulado"
+          }
+        },
+        "required": [
+          "monto"
+        ],
+        "example": {
+          "monto": 100,
+          "metodo": "simulado"
+        }
+      },
       "MutationResult": {
         "type": "object",
         "properties": {
@@ -5331,7 +5356,7 @@
           "apuesta": {
             "type": "number",
             "minimum": 10,
-            "maximum": 1000,
+            "maximum": 10000,
             "multipleOf": 0.01
           }
         },

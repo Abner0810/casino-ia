@@ -1,7 +1,7 @@
 // Configuración de la mesa de Blackjack.
 export const BLACKJACK_LIMITES = {
   MIN: 10,
-  MAX: 1000,
+  MAX: 10000,
 };
 
 // Reglas del crupier y pagos

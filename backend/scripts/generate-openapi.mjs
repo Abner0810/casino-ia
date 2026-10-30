@@ -5,6 +5,7 @@ import { PLINKO_FILAS, PLINKO_RIESGOS } from '../src/modules/games/plinko/plinko
 import { BLACKJACK_LIMITES } from '../src/modules/games/blackjack/blackjack.config.js';
 import { RULETA_LIMITES, RULETA_PAGOS } from '../src/modules/games/roulette/roulette.config.js';
 import { POKER_LIMITES } from '../src/modules/games/poker/poker.config.js';
+import { RETIRO_MAXIMO } from '../src/modules/transactions/transaction.config.js';
 
 const ref = (name) => ({ $ref: `#/components/schemas/${name}` });
 const str = { type: 'string' };
@@ -28,6 +29,7 @@ const schemas = {
   Wallet: object({ saldo: money, bono: money, totalDisponible: money, actualizadoEn: date }),
   Balance: object({ saldo: money, bono: money, total: money, historial: object({ totalApostado: money, totalGanado: money, cantidadApuestas: integer, cantidadPremios: integer, totalDepositado: money, totalRetirado: money, resultadoNeto: { type: 'number' } }) }),
   TransactionInput: object({ monto: { type: 'number', exclusiveMinimum: 0, maximum: 1000000, multipleOf: 0.01 }, metodo: { type: 'string', enum: ['simulado'], default: 'simulado' } }, ['monto']),
+  WithdrawalInput: object({ monto: { type: 'number', exclusiveMinimum: 0, maximum: RETIRO_MAXIMO, multipleOf: 0.01 }, metodo: { type: 'string', enum: ['simulado'], default: 'simulado' } }, ['monto']),
   MutationResult: object({ mensaje: str, saldoActual: money, operationId: uuid }),
   Movement: object({ id: uuid, tipo: { type: 'string', enum: ['DEPOSITO', 'RETIRO', 'APUESTA', 'PREMIO'] }, monto: money, saldoAntes: money, saldoDespues: money, juego: { type: ['string', 'null'] }, descripcion: str, fecha: date }),
   History: object({ items: array(ref('Movement')), paginacion: object({ pagina: { type: 'integer', minimum: 1 }, porPagina: { type: 'integer', minimum: 1, maximum: 100 }, total: integer, totalPaginas: integer }) }),
@@ -63,6 +65,7 @@ const paths = {};
 schemas.RegisterInput.example = { email: 'jugador@example.test', password: 'example-only-password', nombre: 'Jugador Demo' };
 schemas.LoginInput.example = { email: 'jugador@example.test', password: 'example-only-password' };
 schemas.TransactionInput.example = { monto: 100, metodo: 'simulado' };
+schemas.WithdrawalInput.example = { monto: 100, metodo: 'simulado' };
 schemas.ChangePasswordInput.example = { passwordActual: 'cambia-esta-clave', passwordNueva: 'nueva-clave-segura' };
 schemas.BlackjackStart.example = { apuesta: 10 };
 schemas.RouletteBet.example = { apuesta: 10, tipo: 'color', seleccion: 'rojo' };
@@ -119,7 +122,7 @@ endpoint('/api/users/profile', 'patch', 'Edita nombre propio', { input: object({
 endpoint('/api/users/games/{juego}/access', 'post', 'Valida acceso con saldo positivo y entrega límites', { params: [{ name: 'juego', in: 'path', required: true, schema: { type: 'string', enum: ['plinko', 'blackjack', 'roulette', 'poker'] } }], output: object({ juego: str, saldo: money, riesgos: array(object({ riesgo: ref('Riesgo'), apuestaMinima: money, apuestaMaxima: money, maximoMultiplicador: { type: 'number' } })), mesa: object({ apuestaMinima: money, apuestaMaxima: money, reglas: array(str) }) }, ['juego', 'saldo']) });
 endpoint('/api/wallet', 'get', 'Consulta saldo y bono separados', { output: ref('Wallet') });
 endpoint('/api/wallet/balance', 'get', 'Consulta consolidado consistente', { output: ref('Balance'), description: 'totalGanado incluye premios y devoluciones (PREMIO). resultadoNeto = totalGanado - totalApostado. Bono no utilizable en juegos o retiros.' });
-for (const action of ['deposit', 'withdraw']) endpoint(`/api/transactions/${action}`, 'post', action === 'deposit' ? 'Recarga simulada' : 'Retiro simulado', { input: ref('TransactionInput'), output: ref('MutationResult'), mutation: true, status: action === 'deposit' ? 201 : 200 });
+for (const action of ['deposit', 'withdraw']) endpoint(`/api/transactions/${action}`, 'post', action === 'deposit' ? 'Recarga simulada' : 'Retiro simulado', { input: ref(action === 'deposit' ? 'TransactionInput' : 'WithdrawalInput'), output: ref('MutationResult'), mutation: true, status: action === 'deposit' ? 201 : 200 });
 endpoint('/api/transactions/history', 'get', 'Historial propio paginado', { output: ref('History'), params: [
   { name: 'pagina', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
   { name: 'porPagina', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
