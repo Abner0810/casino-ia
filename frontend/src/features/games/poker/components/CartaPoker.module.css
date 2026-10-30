@@ -16,6 +16,10 @@
 .oculta { background: repeating-linear-gradient(45deg, #173b52 0 .35rem, #244d62 .35rem .7rem); color: #f1d894; }
 .pendiente { background: #0b332eb8; border: 2px dashed #b3c6a3; color: #d8c8a2; box-shadow: none; }
 .reverso { display: grid; place-items: center; width: 68%; aspect-ratio: 5 / 7; border: 2px solid currentColor; border-radius: .35rem; font-size: 1.7rem; }
+.compacta .esquina, .compacta .esquinaInferior { font-size: clamp(.58rem, 1vw, .75rem); }
+.compacta .esquina { top: .22rem; left: .25rem; }
+.compacta .esquinaInferior { right: .25rem; bottom: .22rem; }
+.compacta .palo { font-size: clamp(1rem, 1.9vw, 1.4rem); }
 .esquina, .esquinaInferior { position: absolute; display: grid; line-height: 1; font-size: clamp(.75rem, 1.4vw, 1rem); font-weight: 800; }
 .esquina { top: .35rem; left: .4rem; }
 .esquinaInferior { right: .4rem; bottom: .35rem; transform: rotate(180deg); }
@@ -28,5 +32,9 @@
   .esquina { top: .2rem; left: .25rem; }
   .esquinaInferior { right: .25rem; bottom: .2rem; }
   .palo { font-size: 1.55rem; }
+  .compacta .esquina, .compacta .esquinaInferior { font-size: .58rem; }
+  .compacta .esquina { top: .18rem; left: .2rem; }
+  .compacta .esquinaInferior { right: .2rem; bottom: .18rem; }
+  .compacta .palo { font-size: .95rem; }
 }
 @media (prefers-reduced-motion: reduce) { .carta { animation: none; } }

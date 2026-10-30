@@ -1,8 +1,8 @@
 import estilos from './CartaPoker.module.css'
 
-type Props = { carta: string | null; etiqueta: string; demora?: number }
+type Props = { carta: string | null; etiqueta: string; demora?: number; compacta?: boolean }
 
-export function CartaPoker({ carta, etiqueta, demora = 0 }: Props) {
+export function CartaPoker({ carta, etiqueta, demora = 0, compacta = false }: Props) {
   const oculta = carta === '🂠'
   const pendiente = carta === null
   const roja = carta !== null && /[♥♦]/u.test(carta)
@@ -13,7 +13,7 @@ export function CartaPoker({ carta, etiqueta, demora = 0 }: Props) {
     <span
       role="img"
       aria-label={`${etiqueta}: ${pendiente ? 'pendiente' : oculta ? 'carta oculta' : carta}`}
-      className={`${estilos.carta} ${oculta ? estilos.oculta : ''} ${pendiente ? estilos.pendiente : ''} ${roja ? estilos.roja : ''}`}
+      className={`${estilos.carta} ${compacta ? estilos.compacta : ''} ${oculta ? estilos.oculta : ''} ${pendiente ? estilos.pendiente : ''} ${roja ? estilos.roja : ''}`}
       style={{ animationDelay: `${demora}ms` }}
     >
       {pendiente ? <span aria-hidden="true">·</span> : oculta ? <span className={estilos.reverso} aria-hidden="true">♠</span> : (

@@ -60,6 +60,25 @@ export function evaluarMejorMano(cartas) {
   return mejor;
 }
 
+/** Evalúa al usuario y a todos los bots con las mismas comunitarias. */
+export function resolverShowdown(manosPrivadas, comunitarias) {
+  if (!Array.isArray(manosPrivadas) || manosPrivadas.length < 2 || manosPrivadas.some((mano) => !Array.isArray(mano) || mano.length !== 2)) {
+    throw new Error('Se requieren al menos dos manos de Texas Hold’em');
+  }
+  const manos = manosPrivadas.map((cartas) => evaluarMejorMano([...cartas, ...comunitarias]));
+  const mejor = manos.reduce((actual, mano) => compararManos(mano, actual) > 0 ? mano : actual);
+  return { manos, ganadores: manos.flatMap((mano, indice) => compararManos(mano, mejor) === 0 ? [indice] : []) };
+}
+
+/** Aportes virtuales de la mesa en centavos; reparte sin errores de Float. */
+export function calcularRepartoBote(aporteJugador, aportesBots, ganadores) {
+  if (!Array.isArray(aportesBots) || !Array.isArray(ganadores) || ganadores.length === 0) throw new Error('Reparto de bote inválido');
+  const centavos = (monto) => Math.round(Number(monto) * 100);
+  const boteCentavos = centavos(aporteJugador) + aportesBots.reduce((total, aporte) => total + centavos(aporte), 0);
+  const premioCentavos = ganadores.includes(0) ? Math.floor(boteCentavos / ganadores.length) : 0;
+  return { bote: boteCentavos / 100, premioJugador: premioCentavos / 100 };
+}
+
 // Cada calle quema una carta, como en una mesa de Hold'em.
 export function avanzarMesa(fase, baraja, comunitarias) {
   const siguiente = { PREFLOP: ['FLOP', 3], FLOP: ['TURN', 1], TURN: ['RIVER', 1] }[fase];

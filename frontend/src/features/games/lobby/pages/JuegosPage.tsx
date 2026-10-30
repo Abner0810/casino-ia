@@ -40,7 +40,7 @@ const JUEGOS = [
   {
     id: 'poker',
     titulo: 'Poker',
-    descripcion: 'Texas Hold’em contra la banca con dos cartas propias y cinco comunitarias.',
+    descripcion: 'Texas Hold’em contra tres bots con dos cartas propias y cinco comunitarias.',
     reglas: [
       'Tu apuesta inicial abre la mano; puedes pasar, subir una apuesta o retirarte en cada fase.',
       'Se revelan flop, turn y river. La mejor combinación de cinco cartas decide el resultado.',

@@ -6,6 +6,11 @@ async function prepararApi(page: Page) {
   let saldo = 100
   let partida: Record<string, unknown> | null = null
   let partidaPoker: Record<string, unknown> | null = null
+  const botsPoker = [
+    { id: 'bot-luna', nombre: 'Luna', tipo: 'BOT', estado: 'ACTIVO', cartas: null, apuesta: 0, mano: null },
+    { id: 'bot-marco', nombre: 'Marco', tipo: 'BOT', estado: 'ACTIVO', cartas: null, apuesta: 0, mano: null },
+    { id: 'bot-sofia', nombre: 'Sofía', tipo: 'BOT', estado: 'ACTIVO', cartas: null, apuesta: 0, mano: null },
+  ]
   const rondasBlackjack: object[] = []
   const rondasRuleta: object[] = []
   const rondasPoker: object[] = []
@@ -86,7 +91,7 @@ async function prepararApi(page: Page) {
       return json(resultado, 201)
     }
     if (path === 'users/games/poker/access') return json({ juego: 'poker', saldo, mesa: { apuestaMinima: 1, apuestaMaxima: 1000, reglas: [] } })
-    if (path === 'games/poker/config') return json({ apuestaMinima: 1, apuestaMaxima: 1000, maxSubidas: 4, reglas: ['Texas Hold’em contra la banca'] })
+    if (path === 'games/poker/config') return json({ apuestaMinima: 1, apuestaMaxima: 1000, maxSubidas: 4, reglas: ['Texas Hold’em contra tres bots'] })
     if (path === 'games/poker/active') return json({ partida: partidaPoker?.estado === 'ACTIVA' ? partidaPoker : null })
     if (path === 'games/poker/rounds') return json({ items: rondasPoker })
     if (path === 'games/poker/start') {
@@ -100,15 +105,20 @@ async function prepararApi(page: Page) {
         fase: 'PREFLOP',
         cartasJugador: ['J♥', 'J♠'],
         cartasBanca: ['🂠', '🂠'],
+        jugadores: [
+          { id: 'jugador', nombre: 'Tú', tipo: 'HUMANO', estado: 'ACTIVO', cartas: ['J♥', 'J♠'], apuesta, mano: null },
+          ...botsPoker.map((bot) => ({ ...bot, apuesta })),
+        ],
+        turnoActual: 'JUGADOR',
         comunitarias: [],
         apuestaBase: apuesta,
         apuestaTotal: apuesta,
-        bote: apuesta * 2,
+        bote: apuesta * 4,
         accionesPermitidas: ['check', 'raise', 'fold'],
         saldoActual: saldo,
         resultado: null,
       }
-      rondasPoker.unshift({ id: 'poker-qa', apuesta, apuestaTotal: apuesta, bote: apuesta * 2, estado: 'ACTIVA', fase: 'PREFLOP', manoJugador: null, manoBanca: null, ganancia: 0, creadaEn: '2026-10-19T12:00:00Z', cerradaEn: null })
+      rondasPoker.unshift({ id: 'poker-qa', apuesta, apuestaTotal: apuesta, bote: apuesta * 4, estado: 'ACTIVA', fase: 'PREFLOP', manoJugador: null, manoBanca: null, ganancia: 0, creadaEn: '2026-10-19T12:00:00Z', cerradaEn: null })
       return json(partidaPoker, 201)
     }
     if (path === 'games/poker/poker-qa/action') {
@@ -128,7 +138,7 @@ async function prepararApi(page: Page) {
       const nuevaApuesta = accion === 'raise' ? apuesta + Number(partidaPoker!.apuestaBase) : apuesta
       if (accion === 'raise') saldo -= Number(partidaPoker!.apuestaBase)
       const termina = accion === 'fold' || siguiente[0] === 'SHOWDOWN'
-      const resultado = termina ? { ganador: accion === 'fold' ? 'BANCA' : 'JUGADOR', motivo: accion === 'fold' ? 'RETIRO' : 'SHOWDOWN', manoJugador: 'Pareja', manoBanca: 'Carta alta', ganancia: accion === 'fold' ? 0 : nuevaApuesta * 2, gananciaNeta: accion === 'fold' ? -nuevaApuesta : nuevaApuesta } : null
+      const resultado = termina ? { ganador: accion === 'fold' ? 'BANCA' : 'JUGADOR', ganadores: accion === 'fold' ? ['bot-luna'] : ['jugador'], motivo: accion === 'fold' ? 'RETIRO' : 'SHOWDOWN', manoJugador: 'Pareja', manoBanca: 'Carta alta', ganancia: accion === 'fold' ? 0 : nuevaApuesta * 4, gananciaNeta: accion === 'fold' ? -nuevaApuesta : nuevaApuesta * 3 } : null
       if (resultado?.ganador === 'JUGADOR') saldo += resultado.ganancia
       partidaPoker = {
         ...partidaPoker,
@@ -137,13 +147,18 @@ async function prepararApi(page: Page) {
         fase: siguiente[0],
         comunitarias: [...(partidaPoker!.comunitarias as string[]), ...siguiente[1]],
         cartasBanca: termina ? ['A♣', 'K♦'] : ['🂠', '🂠'],
+        jugadores: [
+          { id: 'jugador', nombre: 'Tú', tipo: 'HUMANO', estado: resultado?.ganadores.includes('jugador') ? 'GANADOR' : accion === 'fold' ? 'RETIRADO' : termina ? 'PERDEDOR' : 'ACTIVO', cartas: ['J♥', 'J♠'], apuesta: nuevaApuesta, mano: termina ? 'Pareja' : null },
+          ...botsPoker.map((bot, indice) => ({ ...bot, estado: resultado?.ganadores.includes(bot.id) ? 'GANADOR' : termina ? 'PERDEDOR' : 'ACTIVO', cartas: termina ? [indice === 0 ? 'A♣' : '8♦', indice === 0 ? 'K♦' : '6♥'] : null, apuesta: nuevaApuesta, mano: termina ? (indice === 0 ? 'Carta alta' : 'Pareja' ) : null })),
+        ],
+        turnoActual: termina ? null : 'JUGADOR',
         apuestaTotal: nuevaApuesta,
-        bote: nuevaApuesta * 2,
+        bote: nuevaApuesta * 4,
         accionesPermitidas: termina ? [] : ['check', 'raise', 'fold'],
         saldoActual: saldo,
         resultado,
       }
-      rondasPoker[0] = { ...rondasPoker[0], estado: partidaPoker.estado, fase: partidaPoker.fase, apuestaTotal: nuevaApuesta, bote: nuevaApuesta * 2, ganancia: resultado?.ganancia ?? 0, cerradaEn: termina ? '2026-10-19T12:01:00Z' : null }
+      rondasPoker[0] = { ...rondasPoker[0], estado: partidaPoker.estado, fase: partidaPoker.fase, apuestaTotal: nuevaApuesta, bote: nuevaApuesta * 4, ganancia: resultado?.ganancia ?? 0, cerradaEn: termina ? '2026-10-19T12:01:00Z' : null }
       return json(partidaPoker)
     }
     if (path === 'games/poker/poker-qa') return json(partidaPoker)
@@ -302,7 +317,7 @@ test('ruleta confirma el giro y actualiza saldo con movimiento reducido', async 
   await expect(page.getByText('Saldo', { exact: true }).first().locator('..')).toContainText('110.00')
 })
 
-test('Poker Texas Hold’em recupera la mano y avanza sus fases', async ({ page }) => {
+test('Poker Texas Hold’em muestra tres bots, oculta sus cartas y recupera la mano', async ({ page }) => {
   await login(page)
   await page.getByRole('link', { name: 'Juegos', exact: true }).click()
   await page.getByRole('link', { name: 'Jugar Poker' }).click()
@@ -311,6 +326,10 @@ test('Poker Texas Hold’em recupera la mano y avanza sus fases', async ({ page 
   await expect(page.getByRole('heading', { name: 'Poker', exact: true })).toBeVisible()
   await expect(page.getByRole('group', { name: 'Tus cartas' })).toContainText('J♥')
   await expect(page.getByRole('group', { name: 'Tus cartas' })).toContainText('J♠')
+  for (const nombre of ['Luna', 'Marco', 'Sofía']) {
+    await expect(page.getByRole('article', { name: `${nombre}, En juego` })).toBeVisible()
+    await expect(page.getByRole('group', { name: `Cartas de ${nombre}` }).getByRole('img', { name: /carta oculta/ })).toHaveCount(2)
+  }
   await page.setViewportSize({ width: 320, height: 900 })
   await expect(page.getByRole('group', { name: 'Cartas comunitarias' })).toBeVisible()
   await page.getByRole('link', { name: 'Movimientos', exact: true }).click()

@@ -11,6 +11,7 @@ import { ApiError } from '@/shared/api/errors'
 import { Alert, Button, Cargando, Modal, Money } from '@/shared/ui'
 import { formatearFechaHora } from '@/shared/utils/dates'
 import { ApuestaForm } from '@/features/games/components/ApuestaForm'
+import { AsientoPoker } from '../components/AsientoPoker'
 import { CartaPoker } from '../components/CartaPoker'
 import estilos from './PokerPage.module.css'
 
@@ -24,9 +25,12 @@ const SIGUIENTE: Record<(typeof FASES)[number], string> = {
 
 function tituloResultado(partida: PartidaPoker) {
   if (partida.resultado?.motivo === 'RETIRO') return 'Te retiraste'
+  const jugadores = partida.jugadores ?? []
+  const idUsuario = jugadores.find((jugador) => jugador.tipo === 'HUMANO')?.id
+  if (idUsuario && partida.resultado?.ganadores?.includes(idUsuario)) return 'Ganaste el bote'
   if (partida.estado === 'GANADA') return 'Ganaste el bote'
   if (partida.estado === 'EMPATE') return 'Empate'
-  return 'Ganó la banca'
+  return 'Ganó otro jugador'
 }
 
 export default function PokerPage() {
@@ -50,6 +54,9 @@ function MesaPoker({ usuarioId }: { usuarioId: string }) {
   const claveIncierta = useRef<string | undefined>(undefined)
   const enviando = useRef(false)
   const partida = activaQuery.data?.partida ?? null
+  const jugadores = partida?.jugadores ?? []
+  const oponentes = jugadores.filter((jugador) => jugador.tipo === 'BOT')
+  const jugadorUsuario = jugadores.find((jugador) => jugador.tipo === 'HUMANO')
   const mesa = acceso.data?.juego === 'poker' ? acceso.data : null
   const minimo = config.data?.apuestaMinima ?? mesa?.mesa.apuestaMinima ?? 1
   const maximo = config.data?.apuestaMaxima ?? mesa?.mesa.apuestaMaxima ?? 1000
@@ -125,9 +132,9 @@ function MesaPoker({ usuarioId }: { usuarioId: string }) {
   return (
     <section className={estilos.pagina} aria-labelledby="titulo-poker">
       <header className={estilos.cabecera}>
-        <p className={estilos.ceja}>TEXAS HOLD’EM · CONTRA LA BANCA</p>
+        <p className={estilos.ceja}>TEXAS HOLD’EM · MESA DE CUATRO</p>
         <h1 id="titulo-poker">Poker</h1>
-        <p>Dos cartas tuyas, cinco comunitarias y una decisión en cada fase. Saldo de simulación.</p>
+        <p>Juega contra tres oponentes controlados por el servidor. Saldo de simulación.</p>
       </header>
 
       {(activaQuery.isError || acceso.isError || config.isError) && (
@@ -149,18 +156,28 @@ function MesaPoker({ usuarioId }: { usuarioId: string }) {
       <div className={estilos.disposicion}>
         <div className={estilos.mesa} aria-busy={bloqueado}>
           <div className={estilos.fieltro}>
-            <div className={estilos.banca}>
-              <h2>Banca</h2>
-              <div className={estilos.cartasJugador} role="group" aria-label="Cartas de la banca">
-                {(partida?.cartasBanca ?? ['🂠', '🂠']).map((carta, indice) => (
-                  <CartaPoker key={`banca-${indice}-${carta}`} carta={carta} etiqueta={`Carta ${indice + 1} de la banca`} demora={indice * 80} />
-                ))}
-              </div>
+            <div className={estilos.oponentes} aria-label="Oponentes de la mesa">
+              {oponentes.map((jugador, indice) => (
+                <AsientoPoker
+                  key={jugador.id}
+                  jugador={jugador}
+                  turno={partida?.turnoActual === 'BOTS' && jugador.estado === 'ACTIVO'}
+                  demora={indice * 100}
+                />
+              ))}
+              {!partida && [0, 1, 2].map((indice) => (
+                <div className={estilos.asientoVacio} key={`oponente-${indice}`} aria-label={`Asiento de oponente ${indice + 1}`}>
+                  <span aria-hidden="true">♟</span><strong>Bot {indice + 1}</strong><small>Listo para jugar</small>
+                </div>
+              ))}
+              {partida && oponentes.length < 3 && (
+                <p className={estilos.avisoAsientos} role="status">La mesa no devolvió todos los asientos. Actualiza la partida para sincronizarla.</p>
+              )}
             </div>
 
             <div className={estilos.centroMesa}>
               <p className={estilos.fase} role="status" aria-live="polite">
-                {partida ? `${ETIQUETAS[partida.fase]} · ${partida.estado === 'ACTIVA' ? 'tu turno' : tituloResultado(partida)}` : 'La mesa está lista'}
+                {partida ? `${ETIQUETAS[partida.fase]} · ${partida.estado === 'ACTIVA' ? partida.turnoActual === 'BOTS' || actuar.isPending ? 'los bots responden' : 'tu turno' : tituloResultado(partida)}` : 'La mesa está lista'}
               </p>
               <div className={estilos.comunitarias} role="group" aria-label="Cartas comunitarias">
                 {Array.from({ length: 5 }, (_, indice) => (
@@ -170,14 +187,21 @@ function MesaPoker({ usuarioId }: { usuarioId: string }) {
               <p className={estilos.bote}>Bote <strong><Money valor={partida?.bote ?? 0} /></strong></p>
             </div>
 
-            <div className={estilos.jugador}>
-              <h2>Tu mano</h2>
-              <div className={estilos.cartasJugador} role="group" aria-label="Tus cartas">
-                {(partida?.cartasJugador ?? [null, null]).map((carta, indice) => (
-                  <CartaPoker key={`jugador-${indice}-${carta ?? 'pendiente'}`} carta={carta} etiqueta={`Tu carta ${indice + 1}`} demora={indice * 80} />
-                ))}
+            {jugadorUsuario ? (
+              <AsientoPoker
+                jugador={jugadorUsuario}
+                esUsuario
+                turno={partida?.turnoActual === 'JUGADOR' && partida.estado === 'ACTIVA'}
+                demora={320}
+              />
+            ) : (
+              <div className={`${estilos.asientoVacio} ${estilos.asientoUsuario}`}>
+                <span aria-hidden="true">♟</span><strong>Tú</strong><small>{partida ? 'Asiento no disponible' : 'Tu asiento'}</small>
+                {!partida && <div className={estilos.cartasJugador} role="group" aria-label="Tus cartas">
+                  {[0, 1].map((indice) => <CartaPoker key={indice} carta={null} etiqueta={`Tu carta ${indice + 1}`} demora={indice * 80} />)}
+                </div>}
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -190,7 +214,7 @@ function MesaPoker({ usuarioId }: { usuarioId: string }) {
               <ol className={estilos.fases} aria-label="Fases de la mano">
                 {FASES.map((fase) => <li key={fase} className={fase === partida.fase ? estilos.faseActual : ''} aria-current={fase === partida.fase ? 'step' : undefined}>{ETIQUETAS[fase]}</li>)}
               </ol>
-              <p className={estilos.ayuda}>Pasa para ver {SIGUIENTE[partida.fase as (typeof FASES)[number]]}. Subir añade <Money valor={partida.apuestaBase} /> a tu apuesta; la banca iguala para el bote.</p>
+              <p className={estilos.ayuda}>Pasa para ver {SIGUIENTE[partida.fase as (typeof FASES)[number]]}. Subir añade <Money valor={partida.apuestaBase} /> a tu apuesta. Los bots igualan o se retiran automáticamente según sus cartas.</p>
               <div className={estilos.acciones}>
                 <Button onClick={() => void enviar('check')} disabled={bloqueado || !partida.accionesPermitidas.includes('check')}>Pasar · ver {SIGUIENTE[partida.fase as (typeof FASES)[number]]}</Button>
                 <Button variante="secundario" onClick={() => void enviar('raise')} disabled={bloqueado || !partida.accionesPermitidas.includes('raise')}>Subir <Money valor={partida.apuestaBase} /></Button>
@@ -203,7 +227,12 @@ function MesaPoker({ usuarioId }: { usuarioId: string }) {
               {partida?.resultado && (
                 <div className={estilos.resultado} role="status">
                   <strong>{tituloResultado(partida)}</strong>
-                  {partida.resultado.motivo === 'SHOWDOWN' && <><p>Tu mejor mano: {partida.resultado.manoJugador}</p><p>Mano de la banca: {partida.resultado.manoBanca}</p></>}
+                  {partida.resultado.motivo === 'SHOWDOWN' && <>
+                    <p>Tu mejor mano: {partida.resultado.manoJugador}</p>
+                    {partida.resultado.ganadores?.length ? (
+                      <p>Ganador{partida.resultado.ganadores.length > 1 ? 'es' : ''}: {partida.jugadores?.filter((jugador) => partida.resultado?.ganadores?.includes(jugador.id)).map((jugador) => jugador.tipo === 'HUMANO' ? 'tú' : jugador.nombre).join(', ')}</p>
+                    ) : <p>Mejor mano rival: {partida.resultado.manoBanca}</p>}
+                  </>}
                   <p>Retorno bruto: <Money valor={partida.resultado.ganancia} /></p>
                   <p>Resultado neto: <Money valor={partida.resultado.gananciaNeta} colorearSigno /></p>
                   <p>Saldo confirmado: <Money valor={partida.saldoActual} /></p>
@@ -214,7 +243,7 @@ function MesaPoker({ usuarioId }: { usuarioId: string }) {
           )}
           <details className={estilos.reglas}>
             <summary>Reglas de esta mesa</summary>
-            <p>Texas Hold’em individual contra la banca. Tu mejor combinación de cinco cartas se compara con la suya.</p>
+            <p>Texas Hold’em con tres bots. Cada jugador forma la mejor combinación de cinco cartas con sus dos cartas y las comunitarias.</p>
             <ul>{config.data?.reglas.map((regla) => <li key={regla}>{regla}</li>)}</ul>
           </details>
         </aside>

@@ -60,6 +60,8 @@ export type PartidaPoker = {
   fase: 'PREFLOP' | 'FLOP' | 'TURN' | 'RIVER' | 'SHOWDOWN'
   cartasJugador: string[]
   cartasBanca: string[]
+  jugadores: JugadorPoker[]
+  turnoActual: 'JUGADOR' | 'BOTS' | null
   comunitarias: string[]
   apuestaBase: number
   apuestaTotal: number
@@ -68,6 +70,7 @@ export type PartidaPoker = {
   saldoActual: number
   resultado: {
     ganador: 'JUGADOR' | 'BANCA' | 'EMPATE'
+    ganadores: string[]
     motivo: 'SHOWDOWN' | 'RETIRO'
     manoJugador: string | null
     manoBanca: string | null
@@ -75,11 +78,22 @@ export type PartidaPoker = {
     gananciaNeta: number
   } | null
 }
+export type JugadorPoker = {
+  id: string
+  nombre: string
+  tipo: 'HUMANO' | 'BOT'
+  estado: 'ACTIVO' | 'RETIRADO' | 'GANADOR' | 'PERDEDOR'
+  cartas: string[] | null
+  apuesta: number
+  mano: string | null
+}
 export type AccionPoker = 'check' | 'raise' | 'fold'
 export type ConfiguracionPoker = {
   apuestaMinima: number
   apuestaMaxima: number
   maxSubidas: number
+  cantidadJugadores: number
+  nombresBots: string[]
   reglas: string[]
 }
 export type RondaPoker = {

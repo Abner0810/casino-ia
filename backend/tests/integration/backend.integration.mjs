@@ -150,6 +150,9 @@ test('backend persistente y contrato HTTP', async (t) => {
     assert.equal(start.status, 201); assert.equal(start.body.version, 0);
     assert.equal(start.body.cartasJugador.length, 2); assert.equal(start.body.cartasBanca[0], '🂠'); assert.equal(start.body.baraja, undefined);
     assert.equal(start.body.saldoActual, 90);
+    assert.equal(start.body.jugadores.length, 4);
+    assert.deepEqual(start.body.jugadores.slice(1).map((jugador) => jugador.cartas), [null, null, null]);
+    assert.equal(start.body.bote, 40);
     assert.equal((await request(id, 'GET', '/api/games/poker/active')).body.partida.partidaId, start.body.partidaId);
     const path = `/api/games/poker/${start.body.partidaId}`;
     assert.equal((await request(await user(), 'GET', path)).status, 404);
@@ -157,14 +160,31 @@ test('backend persistente y contrato HTTP', async (t) => {
     const actionKey = randomUUID();
     const action = await request(id, 'POST', `${path}/action`, { version: 0, accion: 'check' }, actionKey);
     assert.equal(action.status, 200); assert.equal(action.body.version, 1);
-    assert.equal(action.body.fase, 'FLOP'); assert.equal(action.body.comunitarias.length, 3);
-    assert.equal(action.body.saldoActual, 90); assert.equal(await balance(id), action.body.saldoActual);
+    if (action.body.estado === 'ACTIVA') {
+      assert.equal(action.body.fase, 'FLOP'); assert.equal(action.body.comunitarias.length, 3);
+      assert.equal(action.body.saldoActual, 90);
+    } else {
+      assert.equal(action.body.estado, 'GANADA');
+      assert.equal(action.body.fase, 'SHOWDOWN'); assert.equal(action.body.comunitarias.length, 5);
+      assert.equal(action.body.saldoActual, 130);
+    }
+    assert.equal(await balance(id), action.body.saldoActual);
     assert.equal((await request(id, 'POST', `${path}/action`, { version: 0, accion: 'check' }, actionKey)).body.operationId, action.body.operationId);
     assert.equal((await request(id, 'POST', `${path}/action`, { version: 0, accion: 'check' }, randomUUID())).status, 409);
     assert.equal((await request(await user(), 'POST', `${path}/action`, { version: 1, accion: 'check' }, randomUUID())).status, 404);
-    assert.notEqual((await request(id, 'GET', '/api/games/poker/active')).body.partida, null);
+    const active = (await request(id, 'GET', '/api/games/poker/active')).body.partida;
+    if (action.body.estado === 'ACTIVA') {
+      assert.notEqual(active, null);
+      const folded = await request(id, 'POST', `${path}/action`, { version: 1, accion: 'fold' }, randomUUID());
+      assert.equal(folded.status, 200); assert.equal(folded.body.estado, 'PERDIDA');
+      assert.ok(folded.body.resultado.ganadores.length > 0);
+      assert.equal(folded.body.saldoActual, 90);
+    } else {
+      assert.equal(active, null);
+      assert.equal(action.body.estado, 'GANADA');
+    }
     assert.equal((await prisma.movimiento.count({ where: { userId: id, juego: 'poker', tipo: 'APUESTA' } })), 1);
-    assert.equal((await prisma.movimiento.count({ where: { userId: id, juego: 'poker', tipo: 'PREMIO' } })), 0);
+    assert.equal((await prisma.movimiento.count({ where: { userId: id, juego: 'poker', tipo: 'PREMIO' } })), action.body.estado === 'GANADA' ? 1 : 0);
   });
 
   await t.test('Blackjack reconstruye columnas JSON, oculta dealer y comprueba ownership', async () => {
