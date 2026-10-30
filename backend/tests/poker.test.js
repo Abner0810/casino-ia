@@ -1,7 +1,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluarMano, cambiarCartas, resolverShowdown, calcularRepartoBote } from '../src/modules/games/poker/poker.logic.js';
+import { evaluarMano, cambiarCartas, resolverShowdown, calcularRepartoBote, avanzarMesa } from '../src/modules/games/poker/poker.logic.js';
 import { evaluarRetiradasBots, responderBotsALaSubida, resumen } from '../src/modules/games/poker/poker.service.js';
+
+test('cerrar river permite resolver el showdown sin repartir ni consumir cartas', () => {
+  const comunitarias = ['10♠', 'J♠', 'Q♠', 'K♠', 'A♠'];
+  const baraja = ['2♥', '3♥'];
+  const cierre = avanzarMesa('RIVER', baraja, comunitarias);
+  assert.equal(cierre.fase, 'SHOWDOWN');
+  assert.deepEqual(cierre.comunitarias, comunitarias);
+  assert.deepEqual(cierre.baraja, baraja);
+  assert.notEqual(cierre.comunitarias, comunitarias);
+  assert.notEqual(cierre.baraja, baraja);
+  const showdown = resolverShowdown([['2♣', '3♦'], ['4♣', '5♦']], cierre.comunitarias);
+  assert.deepEqual(showdown.ganadores, [0, 1]);
+  assert.deepEqual(calcularRepartoBote(10, [10], showdown.ganadores), { bote: 20, premioJugador: 10 });
+  assert.throws(() => avanzarMesa('SHOWDOWN', baraja, comunitarias), /Fase/);
+});
 
 test('video póker clasifica premios Jacks or Better sin confundir as bajo', () => {
   const casos = [
