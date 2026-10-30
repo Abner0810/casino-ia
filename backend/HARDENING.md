@@ -33,3 +33,7 @@ Los access tokens emitidos siguen siendo válidos hasta su expiración aunque se
 Validación posterior a integrar dev del 19 de octubre de 2026: `npm test` terminó con código 0 y ejecutó, en orden, 19 pruebas unitarias y de contrato, 19 escenarios de integración (20 pruebas contando su suite) y 11 escenarios HTTP e2e (12 pruebas contando su suite). Se incluyen tres pruebas del hook de despliegue: commit exacto, redacción de secretos y rechazo de una instancia saludable con versión antigua. Se ejecutó Node 22 en Docker con dependencias Linux, montando el código actual de solo lectura. La base fue PostgreSQL 18 en el contenedor aislado `casino-backend-polish-tests`; se regeneró Prisma y se aplicaron las dos migraciones antes de ejecutar las pruebas. GitHub Actions también configura Node 22; su ejecución remota y el despliegue productivo requieren evidencia independiente.
 
 Los e2e verifican registro/login, salud y autorización, balance vacío, créditos concurrentes y ledger, retiros sin sobregiro, historial, Plinko, inicio/acciones de Blackjack, cierre concurrente con pago único, tercer split, rendición, ownership de logout y refresh de un solo uso. Las pruebas no contactan proveedores externos ni modifican producción.
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

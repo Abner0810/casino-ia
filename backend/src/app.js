@@ -13,7 +13,11 @@ import walletRoutes from './modules/wallet/wallet.routes.js';
 import transactionsRoutes from './modules/transactions/transaction.routes.js';
 import plinkoRoutes from './modules/games/plinko/plinko.routes.js';
 import blackjackRoutes from './modules/games/blackjack/blackjack.routes.js';
+import rouletteRoutes from './modules/games/roulette/roulette.routes.js';
+import pokerRoutes from './modules/games/poker/poker.routes.js';
 import operationRoutes from './modules/operations/operation.routes.js';
+import paymentsRoutes from './modules/payments/payment.routes.js';
+import { webhook as webhookStripe } from './modules/payments/payment.controller.js';
 import { env } from './config/env.js';
 
 export function buildApp() {
@@ -33,6 +37,11 @@ export function buildApp() {
     next();
   });
   app.use(cors(corsConfig));
+
+  // El webhook de Stripe necesita el cuerpo CRUDO para validar la firma.
+  // Va antes de express.json() y del rate limit general (Stripe reintenta).
+  app.post('/api/payments/webhook', express.raw({ type: 'application/json', limit: '256kb' }), webhookStripe);
+
   app.use(express.json({ limit: '100kb' }));
   app.use(limiterGeneral);
 
@@ -59,7 +68,10 @@ export function buildApp() {
   app.use('/api/transactions', transactionsRoutes);
   app.use('/api/games/plinko', plinkoRoutes);
   app.use('/api/games/blackjack', blackjackRoutes);
+  app.use('/api/games/roulette', rouletteRoutes);
+  app.use('/api/games/poker', pokerRoutes);
   app.use('/api/operations', operationRoutes);
+  app.use('/api/payments', paymentsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

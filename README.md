@@ -1,15 +1,14 @@
-# 🎰 Casino API — Simulador Plinko + Blackjack
-
+# 🎰 Casino IA — simulador de casino
 El repositorio incluye ahora la SPA en [`frontend/`](frontend/README.md),
 con Firebase Hosting, CI/CD y agentes especializados para Codex/OpenCode.
 Consulta la [comparación con dev y pendientes reales](ai-context/comparacion-frontend.md)
 y la [guía de agentes y hooks](docs/agentes.md).
 
-API REST de un simulador de casino con dos juegos: **Plinko** (apuestas pequeñas, medianas y grandes) y **Blackjack** (split, doblar apuesta, rendición).
+API REST y aplicación web de un casino simulado con **Plinko**, **Blackjack**, **ruleta europea** y **póker Texas Hold’em**. Las apuestas y premios usan saldo de simulación; el servidor determina los resultados y registra cada movimiento.
 
 ## Stack
 
-- **Node.js 22+ / Express 5** — API REST por capas
+- **Node.js 22.23.4 / Express 5** — API REST por capas
 - **PostgreSQL 18 + Prisma 6** — datos y ORM (patrón repository)
 - **Zod** — validación de DTOs y variables de entorno
 - **JWT** (access 30min + refresh 7d con rotación) — autenticación
@@ -37,6 +36,8 @@ Ruta → auth → authZ → validate(dto Zod) → controller → service → rep
 | transacciones | `/api/transactions` | `POST /deposit` `POST /withdraw` `GET /history` |
 | plinko | `/api/games/plinko` | `POST /bet` `GET /rounds` |
 | blackjack | `/api/games/blackjack` | `POST /start` `/:id/hit` `/:id/stand` `/:id/split` `/:id/double` `/:id/exit` `GET /rounds` |
+| ruleta | `/api/games/roulette` | `GET /config` `POST /bet` `GET /rounds` |
+| póker | `/api/games/poker` | `GET /config` `POST /start` `GET /active` `GET /:id` `POST /:id/action` `GET /rounds` |
 | salud | `/health` | `GET` (health check de Render, verifica DB) |
 
 ## Correr localmente
@@ -44,7 +45,7 @@ Ruta → auth → authZ → validate(dto Zod) → controller → service → rep
 ```bash
 cd backend
 cp .env.example .env      # completa tus variables
-npm install
+npm ci
 npx prisma migrate dev    # aplica la migración (necesita una DB local)
 npm run dev
 ```
@@ -52,7 +53,7 @@ npm run dev
 Sin DB local puedes verificar la estructura igual:
 
 ```bash
-npm run test:logic        # tests de motores puros (Plinko/Blackjack)
+npm run test:logic        # tests de lógica de los cuatro juegos
 node tests/smoke.http.mjs # smoke test de la API sin DB
 ```
 
@@ -78,7 +79,7 @@ El workflow usa el secreto existente `RENDER_DEPLOY_HOOK_URL`. Despliega el SHA 
 
 El backend usa el gate de GitHub Actions: unit tests primero y E2E con PostgreSQL 18 despues. Render mantiene Auto Deploy en Off. El workflow permite push a `main` o ejecucion manual desde Actions sobre `main` o `backend/polish-render` y verifica el commit y `/health` antes de finalizar.
 
-La configuracion, secretos y alternativa manual estan en [backend/DEPLOY.md](backend/DEPLOY.md). El build usa `npm ci && npm run build && npm run migrate:deploy`, Node 22 y `backend` como directorio raiz.
+La configuracion, secretos y alternativa manual estan en [backend/DEPLOY.md](backend/DEPLOY.md). El build comprueba Node 22.23.4 y usa `npm ci && npm run build && npm run migrate:deploy`, con `backend` como directorio raiz.
 
 ## Seguridad implementada
 
@@ -90,3 +91,9 @@ La configuracion, secretos y alternativa manual estan en [backend/DEPLOY.md](bac
 - Helmet + CORS restringido al dominio de Firebase.
 - Plinko: RNG server-side con semilla de 32 bytes registrada por ronda (auditable/reproducible).
 - Blackjack: estado completo server-side en JSONB; el cliente nunca ve la carta oculta del crupier ni influye en el mazo.
+- Ruleta: resultado europeo de 0 a 36 generado en el servidor; apuestas a número, color, paridad, docena o columna.
+- Póker Texas Hold’em: cartas privadas y comunitarias, baraja y partida persistidas en el servidor; las cartas de la banca se ocultan hasta el cierre.
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

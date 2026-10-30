@@ -1,0 +1,842 @@
+{
+  "nodes": [
+    {
+      "id": "goal",
+      "type": "file",
+      "file": "cerebro/arquitectura/Arquitectura objetivo.md",
+      "x": 780,
+      "y": -650,
+      "width": 640,
+      "height": 160,
+      "color": "#A78BFA"
+    },
+    {
+      "id": "solid",
+      "type": "file",
+      "file": "cerebro/arquitectura/SOLID.md",
+      "x": 0,
+      "y": -650,
+      "width": 460,
+      "height": 160,
+      "color": "#A78BFA"
+    },
+    {
+      "id": "patterns",
+      "type": "file",
+      "file": "cerebro/arquitectura/Patrones de diseno.md",
+      "x": 1740,
+      "y": -650,
+      "width": 460,
+      "height": 160,
+      "color": "#A78BFA"
+    },
+    {
+      "id": "frontmap",
+      "type": "file",
+      "file": "cerebro/frontend/Microfrontends.md",
+      "x": 0,
+      "y": -310,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "backmap",
+      "type": "file",
+      "file": "cerebro/backend/Microservicios.md",
+      "x": 850,
+      "y": -310,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "datamap",
+      "type": "file",
+      "file": "cerebro/datos/Modelo relacional objetivo.md",
+      "x": 1700,
+      "y": -310,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "fg",
+      "type": "group",
+      "label": "FRONTEND · shell + módulos · objetivo",
+      "x": -45,
+      "y": -80,
+      "width": 550,
+      "height": 1890,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "bg",
+      "type": "group",
+      "label": "BACKEND · servicios + gateway · objetivo",
+      "x": 805,
+      "y": -80,
+      "width": 550,
+      "height": 1890,
+      "color": "#34D399"
+    },
+    {
+      "id": "dg",
+      "type": "group",
+      "label": "DATOS · PostgreSQL relacional multitenant · objetivo",
+      "x": 1655,
+      "y": -80,
+      "width": 550,
+      "height": 3290,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "f0",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Shell.md",
+      "x": 0,
+      "y": 0,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f1",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Publico.md",
+      "x": 0,
+      "y": 200,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f2",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Identidad y perfil.md",
+      "x": 0,
+      "y": 400,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f3",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Inicio y lobby.md",
+      "x": 0,
+      "y": 600,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f4",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Economia.md",
+      "x": 0,
+      "y": 800,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f5",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Plinko.md",
+      "x": 0,
+      "y": 1000,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f6",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Blackjack.md",
+      "x": 0,
+      "y": 1200,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f7",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Ruleta.md",
+      "x": 0,
+      "y": 1400,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "f8",
+      "type": "file",
+      "file": "cerebro/frontend/microfrontends/Poker.md",
+      "x": 0,
+      "y": 1600,
+      "width": 460,
+      "height": 150,
+      "color": "#22D3EE"
+    },
+    {
+      "id": "b0",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Gateway.md",
+      "x": 850,
+      "y": 0,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b1",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Tenant.md",
+      "x": 850,
+      "y": 200,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b2",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Identidad.md",
+      "x": 850,
+      "y": 400,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b3",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Economia.md",
+      "x": 850,
+      "y": 600,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b4",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Pagos.md",
+      "x": 850,
+      "y": 800,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b5",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Plinko.md",
+      "x": 850,
+      "y": 1000,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b6",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Blackjack.md",
+      "x": 850,
+      "y": 1200,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b7",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Ruleta.md",
+      "x": 850,
+      "y": 1400,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "b8",
+      "type": "file",
+      "file": "cerebro/backend/servicios/Poker.md",
+      "x": 850,
+      "y": 1600,
+      "width": 460,
+      "height": 150,
+      "color": "#34D399"
+    },
+    {
+      "id": "d0",
+      "type": "file",
+      "file": "cerebro/datos/Multitenancy.md",
+      "x": 1700,
+      "y": 0,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d1",
+      "type": "file",
+      "file": "cerebro/datos/Aislamiento RLS.md",
+      "x": 1700,
+      "y": 200,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d2",
+      "type": "file",
+      "file": "cerebro/datos/entidades/Tenant.md",
+      "x": 1700,
+      "y": 400,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d3",
+      "type": "file",
+      "file": "cerebro/datos/entidades/User.md",
+      "x": 1700,
+      "y": 600,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d4",
+      "type": "file",
+      "file": "cerebro/datos/entidades/TenantMembership.md",
+      "x": 1700,
+      "y": 800,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d5",
+      "type": "file",
+      "file": "cerebro/datos/entidades/RefreshToken.md",
+      "x": 1700,
+      "y": 1000,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d6",
+      "type": "file",
+      "file": "cerebro/datos/entidades/Wallet.md",
+      "x": 1700,
+      "y": 1200,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d7",
+      "type": "file",
+      "file": "cerebro/datos/entidades/Movimiento.md",
+      "x": 1700,
+      "y": 1400,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d8",
+      "type": "file",
+      "file": "cerebro/datos/entidades/Operation.md",
+      "x": 1700,
+      "y": 1600,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d9",
+      "type": "file",
+      "file": "cerebro/datos/entidades/Pago.md",
+      "x": 1700,
+      "y": 1800,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d10",
+      "type": "file",
+      "file": "cerebro/datos/entidades/RondaPlinko.md",
+      "x": 1700,
+      "y": 2000,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d11",
+      "type": "file",
+      "file": "cerebro/datos/entidades/PartidaBlackjack.md",
+      "x": 1700,
+      "y": 2200,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d12",
+      "type": "file",
+      "file": "cerebro/datos/entidades/RondaRuleta.md",
+      "x": 1700,
+      "y": 2400,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d13",
+      "type": "file",
+      "file": "cerebro/datos/entidades/PartidaPoker.md",
+      "x": 1700,
+      "y": 2600,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d14",
+      "type": "file",
+      "file": "cerebro/datos/entidades/Reserva y liquidacion.md",
+      "x": 1700,
+      "y": 2800,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "d15",
+      "type": "file",
+      "file": "cerebro/datos/entidades/Outbox e Inbox.md",
+      "x": 1700,
+      "y": 3000,
+      "width": 460,
+      "height": 150,
+      "color": "#FBBF24"
+    },
+    {
+      "id": "legend",
+      "type": "text",
+      "text": "# Cómo leer este mapa\n\nArquitectura **objetivo**, todavía no implementada.\n\nCian: frontend. Verde: backend. Ámbar: datos. Violeta: principios.\n\nUna flecha servicio → entidad indica propiedad, no una FK entre servicios. Los enlaces de tarjetas abren notas con evidencia y diseño.\n\nLos juegos usan Economía para reservar/liquidar. Cada servicio mantiene outbox/inbox propios. Las referencias tenant/usuario entre servicios se verifican por contratos y proyecciones locales.\n\nLa vista global del grafo completa las relaciones que no se dibujan aquí.",
+      "x": 0,
+      "y": 1950,
+      "width": 540,
+      "height": 440,
+      "color": "#A78BFA"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "fromNode": "goal",
+      "fromSide": "left",
+      "fromEnd": "none",
+      "toNode": "frontmap",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "composición objetivo",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e1",
+      "fromNode": "goal",
+      "fromSide": "bottom",
+      "fromEnd": "none",
+      "toNode": "backmap",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "servicios objetivo",
+      "color": "#34D399"
+    },
+    {
+      "id": "e2",
+      "fromNode": "goal",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "datamap",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "persistencia objetivo",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e3",
+      "fromNode": "solid",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "goal",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "principios",
+      "color": "#A78BFA"
+    },
+    {
+      "id": "e4",
+      "fromNode": "patterns",
+      "fromSide": "left",
+      "fromEnd": "none",
+      "toNode": "goal",
+      "toSide": "right",
+      "toEnd": "arrow",
+      "label": "patrones",
+      "color": "#A78BFA"
+    },
+    {
+      "id": "e5",
+      "fromNode": "f0",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b0",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "API y contexto verificado",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e6",
+      "fromNode": "f2",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b2",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "identidad / perfil",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e7",
+      "fromNode": "f3",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b0",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "resumen / catálogo",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e8",
+      "fromNode": "f4",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b3",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "saldo / movimientos",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e9",
+      "fromNode": "f4",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b4",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "checkout / consulta",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e10",
+      "fromNode": "f5",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b5",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "contrato de juego",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e11",
+      "fromNode": "f6",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b6",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "contrato de juego",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e12",
+      "fromNode": "f7",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b7",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "contrato de juego",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e13",
+      "fromNode": "f8",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "b8",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "contrato de juego",
+      "color": "#22D3EE"
+    },
+    {
+      "id": "e14",
+      "fromNode": "b1",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d2",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e15",
+      "fromNode": "b2",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d3",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e16",
+      "fromNode": "b2",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d4",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e17",
+      "fromNode": "b2",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d5",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e18",
+      "fromNode": "b3",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d6",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e19",
+      "fromNode": "b3",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d7",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e20",
+      "fromNode": "b3",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d8",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e21",
+      "fromNode": "b4",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d9",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e22",
+      "fromNode": "b5",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d10",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e23",
+      "fromNode": "b6",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d11",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e24",
+      "fromNode": "b7",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d12",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e25",
+      "fromNode": "b8",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d13",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e26",
+      "fromNode": "b3",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d14",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "propiedad de datos",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e27",
+      "fromNode": "backmap",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "datamap",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "esquema / credencial por dueño",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e28",
+      "fromNode": "datamap",
+      "fromSide": "bottom",
+      "fromEnd": "none",
+      "toNode": "d0",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "alcance tenant",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e29",
+      "fromNode": "d0",
+      "fromSide": "bottom",
+      "fromEnd": "none",
+      "toNode": "d1",
+      "toSide": "top",
+      "toEnd": "arrow",
+      "label": "aislamiento",
+      "color": "#FBBF24"
+    },
+    {
+      "id": "e30",
+      "fromNode": "b4",
+      "fromSide": "left",
+      "fromEnd": "none",
+      "toNode": "b3",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "pago confirmado → crédito idempotente",
+      "color": "#34D399"
+    },
+    {
+      "id": "e31",
+      "fromNode": "b5",
+      "fromSide": "left",
+      "fromEnd": "none",
+      "toNode": "b3",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "reserva / liquidación",
+      "color": "#34D399"
+    },
+    {
+      "id": "e32",
+      "fromNode": "b6",
+      "fromSide": "left",
+      "fromEnd": "none",
+      "toNode": "b3",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "reserva / liquidación",
+      "color": "#34D399"
+    },
+    {
+      "id": "e33",
+      "fromNode": "b7",
+      "fromSide": "left",
+      "fromEnd": "none",
+      "toNode": "b3",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "reserva / liquidación",
+      "color": "#34D399"
+    },
+    {
+      "id": "e34",
+      "fromNode": "b8",
+      "fromSide": "left",
+      "fromEnd": "none",
+      "toNode": "b3",
+      "toSide": "left",
+      "toEnd": "arrow",
+      "label": "reserva / liquidación",
+      "color": "#34D399"
+    },
+    {
+      "id": "e35",
+      "fromNode": "datamap",
+      "fromSide": "right",
+      "fromEnd": "none",
+      "toNode": "d15",
+      "toSide": "right",
+      "toEnd": "arrow",
+      "label": "tablas técnicas por servicio",
+      "color": "#FBBF24"
+    }
+  ]
+}

@@ -3,23 +3,28 @@ import type { FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { invalidarDatosDeDinero } from '@/shared/api/invalidaciones'
 import { consultarOperacion } from '@/shared/api/operations'
-import { Alert, Button, Input, Modal, Money, Skeleton } from '@/shared/ui'
+import { Alert, Button, Input, Modal, Skeleton } from '@/shared/ui'
 import { ApiError } from '@/shared/api/errors'
-import { MONTO_MAXIMO, formatearDinero, montoATexto, validarMontoTexto } from '@/shared/utils/money'
+import {
+  MONTO_MAXIMO,
+  RECARGA_MAXIMA,
+  RECARGA_MINIMA,
+  formatearBs,
+  montoATexto,
+  validarMontoRecarga,
+  validarMontoTexto,
+} from '@/shared/utils/money'
 import { formatearFechaHora } from '@/shared/utils/dates'
-import { useBalance, useDepositar, useRetirar, useSaldo } from '@/features/wallet/wallet.hooks'
+import { useBalance, useCrearCheckout, useRetirar, useSaldo } from '@/features/wallet/wallet.hooks'
 import type { Balance } from '@/features/wallet/wallet.api'
 import type { RespuestaOperacion } from '@/features/wallet/wallet.api'
 import estilos from './Billetera.module.css'
-
-/** Operación cuyo resultado quedó incierto por un fallo de red/timeout. */
-type OperacionIncierta = 'recarga' | 'retiro'
 
 export function BilleteraPage() {
   const queryClient = useQueryClient()
   const saldo = useSaldo()
   const balance = useBalance()
-  const depositar = useDepositar()
+  const crearCheckout = useCrearCheckout()
   const retirar = useRetirar()
 
   // Los montos se mantienen como texto mientras se escriben; se convierten
@@ -32,22 +37,24 @@ export function BilleteraPage() {
 
   const [exito, setExito] = useState<string | null>(null)
   const [errorOperacion, setErrorOperacion] = useState<string | null>(null)
-  const [incierto, setIncierto] = useState<OperacionIncierta | null>(null)
+  // Solo el retiro puede quedar con resultado incierto: la recarga ocurre
+  // en el checkout alojado de Stripe y el saldo se acredita tras confirmar.
+  const [retiroIncierto, setRetiroIncierto] = useState(false)
   const enviando = useRef(false)
   const claveIncierta = useRef<string | undefined>(undefined)
-  const bloqueado = depositar.isPending || retirar.isPending || incierto !== null
+  const bloqueado = crearCheckout.isPending || retirar.isPending || retiroIncierto
 
   function limpiarAvisos() {
     setExito(null)
     setErrorOperacion(null)
-    setIncierto(null)
+    setRetiroIncierto(false)
   }
 
   async function enviarRecarga(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     if (bloqueado || enviando.current) return
     limpiarAvisos()
-    const validacion = validarMontoTexto(montoRecarga)
+    const validacion = validarMontoRecarga(montoRecarga)
     if (validacion) {
       setErrorRecarga(validacion)
       return
@@ -55,18 +62,18 @@ export function BilleteraPage() {
     setErrorRecarga(null)
     enviando.current = true
     try {
-      const respuesta = await depositar.mutateAsync(montoATexto(montoRecarga))
-      setExito(`${respuesta.mensaje} Saldo actual: ${formatearDinero(respuesta.saldoActual)}.`)
-      setMontoRecarga('')
-    } catch (error) {
-      // Un timeout deja el resultado incierto: NO se reenvía sola la operación.
-      if (error instanceof ApiError && (error.esRed || error.status >= 500)) {
-        setIncierto('recarga')
-        claveIncierta.current = error.operationKey
-      } else {
-        setErrorOperacion(error instanceof ApiError ? error.mensaje : 'No se pudo completar la recarga.')
+      const resultado = await crearCheckout.mutateAsync(montoATexto(montoRecarga))
+      if (!('checkoutUrl' in resultado)) {
+        setErrorOperacion('El checkout sigue iniciándose. Conserva esta pantalla y vuelve a intentarlo en unos segundos.')
+        return
       }
-    } finally { enviando.current = false }
+      const { checkoutUrl } = resultado
+      // Salida al checkout alojado: los datos de tarjeta nunca pasan por la SPA.
+      window.location.assign(checkoutUrl)
+    } catch (error) {
+      enviando.current = false
+      setErrorOperacion(error instanceof ApiError ? error.mensaje : 'No se pudo iniciar el pago.')
+    }
   }
 
   function abrirRetiro(evento: FormEvent<HTMLFormElement>) {
@@ -88,13 +95,13 @@ export function BilleteraPage() {
     limpiarAvisos()
     try {
       const respuesta = await retirar.mutateAsync(montoATexto(montoRetiro))
-      setExito(`${respuesta.mensaje} Saldo actual: ${formatearDinero(respuesta.saldoActual)}.`)
+      setExito(`${respuesta.mensaje ?? 'Retiro completado.'} Saldo actual: ${formatearBs(respuesta.saldoActual ?? respuesta.saldo ?? 0)}.`)
       setMontoRetiro('')
       setModalRetiro(false)
     } catch (error) {
       setModalRetiro(false)
       if (error instanceof ApiError && (error.esRed || error.status >= 500)) {
-        setIncierto('retiro')
+        setRetiroIncierto(true)
         claveIncierta.current = error.operationKey
       } else {
         setErrorOperacion(error instanceof ApiError ? error.mensaje : 'No se pudo completar el retiro.')
@@ -109,9 +116,9 @@ export function BilleteraPage() {
       const operacion = await consultarOperacion<RespuestaOperacion>(claveIncierta.current)
       invalidarDatosDeDinero(queryClient)
       await Promise.all([saldo.refetch(), balance.refetch()])
-      setIncierto(null)
+      setRetiroIncierto(false)
       claveIncierta.current = undefined
-      setExito(operacion.response.mensaje)
+      if (operacion.estado === 'CONFIRMADA') setExito(operacion.response.mensaje)
     } catch {
       setErrorOperacion('La operación todavía no puede confirmarse. Espera y vuelve a consultar; no la repitas.')
     } finally { enviando.current = false }
@@ -126,8 +133,8 @@ export function BilleteraPage() {
           Billetera
         </h1>
         <p className={estilos.subtitulo}>
-          Saldo de simulación para practicar. Las recargas y los retiros son simulados: no se usan tarjetas ni datos de pago
-          reales.
+          Saldo de simulación en bolivianos. La recarga se paga con Stripe (modo prueba) y el retiro sigue siendo
+          simulado: el saldo se acredita solo cuando Stripe confirma el pago.
         </p>
       </header>
 
@@ -141,11 +148,11 @@ export function BilleteraPage() {
           {errorOperacion}
         </Alert>
       )}
-      {incierto && (
+      {retiroIncierto && (
         <div className={estilos.avisoIncierto}>
           <Alert tipo="aviso" titulo="Resultado incierto">
-            No pudimos confirmar si tu {incierto === 'recarga' ? 'recarga' : 'retiro'} se aplicó. No la reenviamos
-            automáticamente: reconsulta el saldo para ver el estado real antes de intentarlo de nuevo.
+            No pudimos confirmar si tu retiro se aplicó. No lo reenviamos automáticamente: reconsulta el saldo para
+            ver el estado real antes de intentarlo de nuevo.
           </Alert>
           <Button variante="secundario" cargando={reconsultando} onClick={() => void reconsultarSaldo()}>
             Reconsultar saldo
@@ -156,7 +163,7 @@ export function BilleteraPage() {
       <div className={estilos.rejilla}>
         <section className={estilos.tarjeta} aria-labelledby="titulo-saldo">
           <h2 id="titulo-saldo" className={estilos.tarjetaTitulo}>
-            Saldo de simulación
+            Saldo de simulación en Bs
           </h2>
 
           {saldo.isPending ? (
@@ -175,21 +182,15 @@ export function BilleteraPage() {
             </div>
           ) : (
             <>
-              <p className={estilos.saldoValor}>
-                <Money valor={saldo.data.saldo} />
-              </p>
+              <p className={estilos.saldoValor}>{formatearBs(saldo.data.saldo)}</p>
               <dl className={estilos.listaDatos}>
                 <div className={estilos.dato}>
                   <dt>Bono (no retirable)</dt>
-                  <dd>
-                    <Money valor={saldo.data.bono} />
-                  </dd>
+                  <dd>{formatearBs(saldo.data.bono)}</dd>
                 </div>
                 <div className={estilos.dato}>
                   <dt>Total mostrado (saldo + bono)</dt>
-                  <dd>
-                    <Money valor={saldo.data.totalDisponible} />
-                  </dd>
+                  <dd>{formatearBs(saldo.data.totalDisponible)}</dd>
                 </div>
                 <div className={estilos.dato}>
                   <dt>Actualizado</dt>
@@ -205,13 +206,13 @@ export function BilleteraPage() {
 
         <section className={estilos.tarjeta} aria-labelledby="titulo-operaciones">
           <h2 id="titulo-operaciones" className={estilos.tarjetaTitulo}>
-            Recarga y retiro simulados
+            Recarga con Stripe y retiro simulado
           </h2>
 
           <form className={estilos.formulario} onSubmit={enviarRecarga} noValidate>
-            <h3 className={estilos.subtituloForm}>Recargar saldo</h3>
+            <h3 className={estilos.subtituloForm}>Recargar saldo con Stripe</h3>
             <Input
-              etiqueta={`Monto a recargar (máx. ${formatearDinero(MONTO_MAXIMO)})`}
+              etiqueta={`Monto a recargar (${formatearBs(RECARGA_MINIMA)} – ${formatearBs(RECARGA_MAXIMA)})`}
               type="text"
               inputMode="decimal"
               autoComplete="off"
@@ -220,15 +221,19 @@ export function BilleteraPage() {
               onChange={(evento) => setMontoRecarga(evento.target.value)}
               error={errorRecarga ?? undefined}
             />
-            <Button type="submit" ancho cargando={depositar.isPending} disabled={bloqueado}>
-              Simular recarga
+            <Button type="submit" ancho cargando={crearCheckout.isPending} disabled={bloqueado}>
+              Pagar con Stripe
             </Button>
+            <p className={estilos.nota}>
+              Pago de prueba en bolivianos: usa la tarjeta 4242 4242 4242 4242, cualquier fecha futura y cualquier CVC.
+              No se cobra dinero real. El saldo se acredita cuando Stripe confirma el pago.
+            </p>
           </form>
 
           <form className={estilos.formulario} onSubmit={abrirRetiro} noValidate>
             <h3 className={estilos.subtituloForm}>Retirar saldo</h3>
             <Input
-              etiqueta={`Monto a retirar (máx. ${formatearDinero(MONTO_MAXIMO)})`}
+              etiqueta={`Monto a retirar (máx. ${formatearBs(MONTO_MAXIMO)})`}
               type="text"
               inputMode="decimal"
               autoComplete="off"
@@ -243,7 +248,7 @@ export function BilleteraPage() {
           </form>
 
           <p className={estilos.nota}>
-            Monto positivo, hasta {formatearDinero(MONTO_MAXIMO)} y con máximo dos decimales.
+            Retiro simulado: monto positivo, hasta {formatearBs(MONTO_MAXIMO)} y con máximo dos decimales.
           </p>
         </section>
       </div>
@@ -294,11 +299,11 @@ export function BilleteraPage() {
         }
       >
         <p>
-          Vas a retirar <Money valor={montoATexto(montoRetiro)} /> de tu saldo de simulación.
+          Vas a retirar {formatearBs(montoATexto(montoRetiro))} de tu saldo de simulación.
         </p>
         {saldo.data && (
           <p className={estilos.nota}>
-            Saldo disponible actual: <Money valor={saldo.data.saldo} />. El retiro se rechaza si supera ese saldo.
+            Saldo disponible actual: {formatearBs(saldo.data.saldo)}. El retiro se rechaza si supera ese saldo.
           </p>
         )}
         <p className={estilos.nota}>Operación simulada: no se solicitan datos de pago ni se mueve dinero real.</p>
@@ -319,15 +324,11 @@ function Estadisticas({ balance }: { balance: Balance }) {
       <div className={estilos.estadisticas}>
         <div className={estilos.estadistica}>
           <span className={estilos.estadisticaEtiqueta}>Total apostado</span>
-          <p className={estilos.estadisticaValor}>
-            <Money valor={historial.totalApostado} />
-          </p>
+          <p className={estilos.estadisticaValor}>{formatearBs(historial.totalApostado)}</p>
         </div>
         <div className={estilos.estadistica}>
           <span className={estilos.estadisticaEtiqueta}>Total ganado</span>
-          <p className={estilos.estadisticaValor}>
-            <Money valor={historial.totalGanado} />
-          </p>
+          <p className={estilos.estadisticaValor}>{formatearBs(historial.totalGanado)}</p>
         </div>
         <div className={estilos.estadistica}>
           <span className={estilos.estadisticaEtiqueta}>Apuestas</span>
@@ -339,20 +340,17 @@ function Estadisticas({ balance }: { balance: Balance }) {
         </div>
         <div className={estilos.estadistica}>
           <span className={estilos.estadisticaEtiqueta}>Total depositado</span>
-          <p className={estilos.estadisticaValor}>
-            <Money valor={historial.totalDepositado} />
-          </p>
+          <p className={estilos.estadisticaValor}>{formatearBs(historial.totalDepositado)}</p>
         </div>
         <div className={estilos.estadistica}>
           <span className={estilos.estadisticaEtiqueta}>Total retirado</span>
-          <p className={estilos.estadisticaValor}>
-            <Money valor={historial.totalRetirado} />
-          </p>
+          <p className={estilos.estadisticaValor}>{formatearBs(historial.totalRetirado)}</p>
         </div>
         <div className={estilos.estadistica}>
           <span className={estilos.estadisticaEtiqueta}>Resultado neto</span>
           <p className={estilos.estadisticaValor}>
-            <Money valor={historial.resultadoNeto} colorearSigno />
+            {historial.resultadoNeto > 0 ? '+' : ''}
+            {formatearBs(historial.resultadoNeto)}
           </p>
         </div>
       </div>
@@ -360,21 +358,15 @@ function Estadisticas({ balance }: { balance: Balance }) {
       <dl className={estilos.listaDatos}>
         <div className={estilos.dato}>
           <dt>Saldo actual</dt>
-          <dd>
-            <Money valor={balance.saldo} />
-          </dd>
+          <dd>{formatearBs(balance.saldo)}</dd>
         </div>
         <div className={estilos.dato}>
           <dt>Bono actual</dt>
-          <dd>
-            <Money valor={balance.bono} />
-          </dd>
+          <dd>{formatearBs(balance.bono)}</dd>
         </div>
         <div className={estilos.dato}>
           <dt>Total actual (saldo + bono)</dt>
-          <dd>
-            <Money valor={balance.total} />
-          </dd>
+          <dd>{formatearBs(balance.total)}</dd>
         </div>
       </dl>
     </section>

@@ -9,9 +9,24 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET debe tener al menos 32 caracteres'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET debe tener al menos 32 caracteres'),
   CORS_ORIGINS: z.string().default('*'),
+  STRIPE_SECRET_KEY: z.string().regex(/^sk_test_/, 'STRIPE_SECRET_KEY debe ser una clave de TEST (sk_test_)').optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().regex(/^whsec_/, 'STRIPE_WEBHOOK_SECRET debe empezar por whsec_').optional(),
+  STRIPE_CURRENCY: z.literal('bob').default('bob'),
+  STRIPE_CHECKOUT_BASE_URL: z.string().url('STRIPE_CHECKOUT_BASE_URL debe ser una URL válida').optional(),
 }).superRefine((value, context) => {
   if (value.NODE_ENV === 'production' && (value.CORS_ORIGINS.split(',').some((origin) => origin.trim() === '*') || !value.CORS_ORIGINS.trim())) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['CORS_ORIGINS'], message: 'Producción requiere orígenes explícitos' });
+  }
+  if (value.NODE_ENV === 'production' && !value.STRIPE_SECRET_KEY) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['STRIPE_SECRET_KEY'], message: 'Producción requiere STRIPE_SECRET_KEY' });
+  }
+  if (value.NODE_ENV === 'production' && !value.STRIPE_WEBHOOK_SECRET) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['STRIPE_WEBHOOK_SECRET'], message: 'Producción requiere STRIPE_WEBHOOK_SECRET' });
+  }
+  for (const [campo, valor] of [['STRIPE_SECRET_KEY', value.STRIPE_SECRET_KEY], ['STRIPE_WEBHOOK_SECRET', value.STRIPE_WEBHOOK_SECRET]]) {
+    if (valor && /^(?:sk|pk|rk)_live_/.test(valor)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: [campo], message: 'Solo se admite modo test: las claves live están prohibidas' });
+    }
   }
 });
 

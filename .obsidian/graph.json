@@ -1,0 +1,72 @@
+{
+  "collapse-filter": false,
+  "search": "-path:\".release-main\" -path:\".profile-purple-push\" -path:\"node_modules\" -path:\"dist\" -path:\"coverage\" -path:\"playwright-report\" -path:\"test-results\"",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:\"cerebro/datos\" OR path:\"cerebro/arquitectura/Datos\"",
+      "color": {
+        "a": 1,
+        "rgb": 16498468
+      }
+    },
+    {
+      "query": "path:\"cerebro/frontend\" OR path:\"ai-context/planfrontend\" OR path:\"frontend/README\"",
+      "color": {
+        "a": 1,
+        "rgb": 2282478
+      }
+    },
+    {
+      "query": "path:\"cerebro/backend\" OR path:\"cerebro/economia\" OR path:\"cerebro/juegos\" OR path:\"ai-context/planbackend\" OR path:\"backend/README\"",
+      "color": {
+        "a": 1,
+        "rgb": 3462041
+      }
+    },
+    {
+      "query": "path:\"cerebro/seguridad\" OR path:\"backend/HARDENING\"",
+      "color": {
+        "a": 1,
+        "rgb": 16478597
+      }
+    },
+    {
+      "query": "path:\"cerebro/operacion\" OR path:\"backend/DEPLOY\"",
+      "color": {
+        "a": 1,
+        "rgb": 16486972
+      }
+    },
+    {
+      "query": "path:\"cerebro/gestion\" OR path:\"ai-context/pendientes\" OR path:\"ai-context/comparacion\" OR path:\"docs/agentes\" OR file:AGENTS",
+      "color": {
+        "a": 1,
+        "rgb": 6333946
+      }
+    },
+    {
+      "query": "path:\"cerebro/arquitectura\" OR path:\"cerebro/Inicio\" OR path:\"cerebro/Guia del grafo\" OR file:README",
+      "color": {
+        "a": 1,
+        "rgb": 10980346
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.15,
+  "lineSizeMultiplier": 1.1,
+  "collapse-forces": true,
+  "centerStrength": 0.35,
+  "repelStrength": 12,
+  "linkStrength": 1,
+  "linkDistance": 200,
+  "scale": 0.2723605714608052,
+  "close": true
+}

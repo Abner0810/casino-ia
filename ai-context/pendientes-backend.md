@@ -111,3 +111,7 @@ Ejecutar contra la URL de Render con la DB conectada:
 - Tests: 10 de lógica (Plinko/Blackjack) + 7 smoke HTTP → todos en verde
 - `render.yaml`, GitHub Actions (`ci.yml` en dev/qa · `deploy.yml` en main), 3 ramas empujadas
 - `npm audit`: 0 vulnerabilidades
+
+## Mapa de conocimiento
+
+[[cerebro/Inicio|Casino IA · Segundo cerebro]] · [[cerebro/Guia del grafo|Guía del grafo de Obsidian]]

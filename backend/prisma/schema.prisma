@@ -36,6 +36,14 @@ enum Riesgo {
   GRANDE
 }
 
+enum EstadoPago {
+  CREANDO
+  PENDIENTE
+  PAGADO
+  FALLIDO
+  EXPIRADO
+}
+
 // ─────────────────────────── Modelos ───────────────────────────
 
 model User {
@@ -49,8 +57,11 @@ model User {
   movimientos  Movimiento[]
   partidas     PartidaBlackjack[]
   rondasPlinko RondaPlinko[]
+  rondasRuleta RondaRuleta[]
+  partidasPoker PartidaPoker[]
   refreshTokens RefreshToken[]
   operations   Operation[]
+  pagos        Pago[]
   createdAt    DateTime         @default(now())
 }
 
@@ -73,10 +84,12 @@ model Movimiento {
   monto        Decimal          @db.Decimal(12,2) // siempre positivo
   saldoAntes   Decimal          @db.Decimal(12,2)
   saldoDespues Decimal          @db.Decimal(12,2)
-  juego        String? // "plinko" | "blackjack" | null
+  juego        String? // "plinko" | "blackjack" | "roulette" | "poker" | null
   descripcion  String
   operationId  String?
   operation    Operation? @relation(fields: [operationId], references: [id])
+  pagoId       String?        @unique
+  pago         Pago?          @relation(fields: [pagoId], references: [id])
   createdAt    DateTime         @default(now())
 
   @@index([userId, createdAt])
@@ -114,6 +127,45 @@ model RondaPlinko {
   @@index([userId, createdAt])
 }
 
+model RondaRuleta {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apuesta       Decimal  @db.Decimal(12,2)
+  tipo          String
+  seleccion     String
+  numero        Int
+  multiplicador Int
+  ganancia      Decimal  @db.Decimal(12,2)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model PartidaPoker {
+  id         String        @id @default(uuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apuesta    Decimal       @db.Decimal(12,2)
+  apuestaTotal Decimal     @default(0) @db.Decimal(12,2)
+  estado     EstadoPartida @default(ACTIVA)
+  modalidad  String        @default("VIDEO_POKER") // legado o TEXAS_HOLDEM
+  fase       String?
+  cartas     Json          // dos cartas privadas del jugador en Texas Hold'em
+  banca      Json?         // cartas privadas de la banca, nunca expuestas durante la mano
+  comunitarias Json?       // 0, 3, 4 o 5 cartas visibles
+  baraja     Json          // mazo restante, nunca expuesto al cliente
+  resultado  Json?
+  ganancia   Decimal       @default(0) @db.Decimal(12,2)
+  version    Int           @default(0)
+  mesaVersion Int          @default(1)
+  createdAt  DateTime      @default(now())
+  finishedAt DateTime?
+
+  @@index([userId, estado])
+  @@index([userId, modalidad, createdAt])
+}
+
 model RefreshToken {
   id        String    @id @default(uuid())
   userId    String
@@ -137,6 +189,30 @@ model Operation {
   response    Json
   createdAt   DateTime @default(now())
   movimientos Movimiento[]
+  pago       Pago?
 
   @@unique([userId, key])
+}
+
+// Intento de pago con Stripe. La acreditación ocurre una sola vez:
+// Pago PENDIENTE -> PAGADO se hace con updateMany condicional y el
+// Movimiento queda enlazado por pagoId @unique.
+model Pago {
+  id                    String     @id @default(uuid())
+  userId                String
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monto                 Decimal    @db.Decimal(12,2)
+  moneda                String     @db.VarChar(3)
+  estado                EstadoPago @default(CREANDO)
+  stripeSessionId       String?    @unique
+  stripePaymentIntentId String?    @unique
+  operationId           String?    @unique
+  operation             Operation? @relation(fields: [operationId], references: [id], onDelete: SetNull)
+  parametrosStripe      Json?
+  movimiento            Movimiento?
+  creadoEn              DateTime   @default(now())
+  actualizadoEn         DateTime   @updatedAt
+  pagadoEn              DateTime?
+
+  @@index([userId, creadoEn])
 }

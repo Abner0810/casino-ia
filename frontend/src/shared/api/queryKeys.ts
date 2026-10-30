@@ -19,4 +19,5 @@ export const qk = {
   accesoJuego: (uid?: string, juego?: string) => ['acceso', uid ?? 'anonimo', juego ?? ''] as const,
   plinkoRondas: (uid?: string) => ['plinko', 'rondas', uid ?? 'anonimo'] as const,
   blackjackRondas: (uid?: string) => ['blackjack', 'rondas', uid ?? 'anonimo'] as const,
+  pago: (uid?: string, pagoId?: string) => ['pago', uid ?? 'anonimo', pagoId ?? ''] as const,
 }

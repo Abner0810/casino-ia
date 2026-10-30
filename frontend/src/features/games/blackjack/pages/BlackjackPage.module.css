@@ -9,6 +9,46 @@
 .crupier { min-height: 175px; }
 .cartas { list-style: none; margin: var(--sp-4) 0; padding: 0; display: flex; justify-content: center; gap: var(--sp-2); flex-wrap: wrap; }
 .carta { display: grid; place-items: center; width: 58px; height: 82px; border-radius: var(--radius-sm); background: #f8f5e9; color: #172029; font-family: var(--font-mono); font-weight: 700; font-size: var(--text-xl); box-shadow: 0 3px 6px #0005; }
+
+.cartaAnimada {
+  animation: cartaDeal 0.4s ease-out both;
+}
+
+@keyframes cartaDeal {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.manoGanadora {
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.8), 0 0 20px rgba(46, 204, 113, 0.4);
+  animation: manoGanadoraPulse 1s ease-in-out infinite;
+}
+
+@keyframes manoGanadoraPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.8), 0 0 20px rgba(46, 204, 113, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(46, 204, 113, 1), 0 0 30px rgba(46, 204, 113, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartaAnimada {
+    animation: none;
+  }
+  .manoGanadora {
+    animation: none;
+    box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.8);
+  }
+}
 .roja { color: #a71b34; }
 .cartaSvg { display: block; width: 100%; height: 100%; }
 .inscripcion { margin: var(--sp-5) 0; color: #d8c083; font-size: var(--text-xs); letter-spacing: .14em; }
