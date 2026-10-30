@@ -32,8 +32,7 @@ Este inventario resume rutas montadas en `backend/src/app.js` y sus routers/DTOs
 
 ## Validaciones de entrada destacadas
 
-- Registro: email válido hasta 150 caracteres, nombre entre 2 y 80, contraseña de al menos 8 y como máximo 72 bytes UTF-8.
-- Perfil: nombre entre 2 y 80 caracteres.
+- Registro: email válido hasta 150 caracteres, nombre entre 2 y 80, contraseña entre 8 y 72 caracteres y máximo 72 bytes UTF-8. Login: email válido y contraseña no vacía, máximo 72 bytes UTF-8. Perfil: nombre entre 2 y 80 caracteres; cambio de contraseña valida la contraseña actual y una nueva entre 8 y 72 caracteres/máximo 72 bytes UTF-8.
 - Depósito/retiro simulados: monto positivo, máximo 1.000.000 y hasta dos decimales; el método es `simulado`.
 - Stripe checkout: monto entre 5 y 500 con hasta dos decimales; moneda la fija configuración de servidor y está fijada a `bob` en `env.js`.
 - Plinko: monto positivo con dos decimales y riesgo válido; límites actuales: PEQUENO 1–50, MEDIANO 50–500, GRANDE 500–5000.

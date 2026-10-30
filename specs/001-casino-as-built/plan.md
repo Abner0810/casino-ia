@@ -1,6 +1,6 @@
 # Plan as-built: Casino IA actual
 
-**Feature identifier**: `001-casino-as-built` | **Checkout Git**: `feat/poker-bots-15-names` | **Date**: 2026-10-29 | **Spec**: [spec.md](spec.md)
+**Feature identifier**: `001-casino-as-built` | **Código revisado**: commit `59502dc` (entonces en `feat/poker-bots-15-names`, integrado en `dev` mediante `28b29ab`) | **Date**: 2026-10-29 | **Spec**: [spec.md](spec.md)
 
 **Input**: Inventario descriptivo del estado actual, sustentado en el código local, pruebas y documentación revisados.
 
@@ -40,13 +40,13 @@ Estos valores describen manifiestos y configuración locales; no son una propues
 |---|---|
 | Stack y versiones actuales | Conforme: se describen desde los package manifests y lockfiles; no se propone cambio. |
 | Servidor como autoridad de saldo/resultados | Conforme: las rutas y servicios delegan resultados y liquidación al backend. |
-| Validación contractual | Brecha observada: las rutas revisadas que aplican validadores Zod validan body, params o query mediante DTOs; `GET /api/operations/:key` no aplica `validateParams` ni un DTO explícito al parámetro `key` (`backend/src/modules/operations/operation.routes.js`). Esto contradice el alcance universal del principio III para esa ruta; se documenta el comportamiento local sin afirmar conformidad general. |
+| Validación contractual | Brechas observadas: `GET /api/operations/:key` no aplica `validateParams` ni un DTO explícito a `key` (`backend/src/modules/operations/operation.routes.js`); además, los formularios de contraseña no replican el límite backend de 72 bytes UTF-8. Esto difiere del principio III de validación alineada; se documenta el comportamiento local sin afirmar conformidad general. |
 | Idempotencia y resultados inciertos | Documentado con alcance: middleware idempotente en rutas seleccionadas; frontend sin retries automáticos de mutaciones ante timeout/red/5xx. No se generaliza a todas las rutas. |
 | Secretos y sesión | Conforme al diseño local: `VITE_*` público; access/refresh del browser en memoria; secretos de backend validados desde entorno. |
 | Aislamiento por usuario | Conforme en las rutas revisadas: ID interno deriva de Bearer y consultas de recursos incluyen propiedad. El proyecto no es multitenant. |
 | Accesibilidad y estados de UI | Parcial como garantía: hay estados y soporte de movimiento reducido, además de pruebas puntuales. No hay certificación WCAG ni verificación exhaustiva documentada. |
 | Pruebas | Evidencia de suites presentes y resultados históricos documentados; no se ejecutaron para crear este plan. |
-| Flujo y autorización de entrega | Documentado como regla. Este trabajo no cambia rama, no hace push/PR/deploy. La publicación remota actual no se infiere de configuración. |
+| Flujo y autorización de entrega | `AGENTS.md` documenta el flujo `dev → qa → main` y la autorización requerida para publicar. Esta rama contiene únicamente el inventario SDD; no acredita un deploy ni el estado remoto actual de la aplicación. |
 | Cambios pequeños y compatibles | Conforme: artefactos de documentación describen el sistema existente, sin alterar contratos. |
 
 La constitución contiene un `TODO(RATIFICATION_DATE)` por confirmar. No bloquea la descripción técnica, pero el documento aún espera ratificación formal del equipo.
