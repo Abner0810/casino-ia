@@ -24,12 +24,16 @@ const SIGUIENTE: Record<(typeof FASES)[number], string> = {
 }
 
 function tituloResultado(partida: PartidaPoker) {
-  if (partida.resultado?.motivo === 'RETIRO') return 'Te retiraste'
+  const motivo = partida.resultado?.motivo
+  if (motivo === 'RETIRO') return 'Te retiraste'
+  if (motivo === 'BOT_FOLD') return 'Ganaste: los demás jugadores se retiraron'
+  if ((motivo as string) === 'MIGRACION_MESA_BOTS') return 'Partida actualizada'
   const jugadores = partida.jugadores ?? []
   const idUsuario = jugadores.find((jugador) => jugador.tipo === 'HUMANO')?.id
   if (idUsuario && partida.resultado?.ganadores?.includes(idUsuario)) return 'Ganaste el bote'
   if (partida.estado === 'GANADA') return 'Ganaste el bote'
   if (partida.estado === 'EMPATE') return 'Empate'
+  if ((partida.estado as string) === 'RENDIDA') return 'Partida devuelta'
   return 'Ganó otro jugador'
 }
 

@@ -45,6 +45,6 @@ describe('walletApi.verPago', () => {
     expect(http).toHaveBeenLastCalledWith('payments/a%2Fb')
 
     await walletApi.sincronizarPago('pago-1')
-    expect(http).toHaveBeenLastCalledWith('payments/pago-1/sync')
+    expect(http).toHaveBeenLastCalledWith('payments/pago-1/sync', { method: 'POST' })
   })
 })

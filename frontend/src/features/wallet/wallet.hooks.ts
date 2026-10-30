@@ -8,7 +8,7 @@ export function useSaldo() {
   const { usuario } = useSession()
   return useQuery({
     queryKey: qk.wallet(usuario?.publicId),
-    queryFn: walletApi.verSaldo,
+    queryFn: walletApi.obtenerBilletera,
     enabled: Boolean(usuario),
     staleTime: 15_000,
   })
@@ -18,7 +18,7 @@ export function useBalance() {
   const { usuario } = useSession()
   return useQuery({
     queryKey: qk.balance(usuario?.publicId),
-    queryFn: walletApi.verBalance,
+    queryFn: walletApi.obtenerBalance,
     enabled: Boolean(usuario),
   })
 }
