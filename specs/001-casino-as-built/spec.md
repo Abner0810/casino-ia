@@ -1,10 +1,10 @@
 # Feature Specification: Inventario as-built del Casino IA
 
-**Feature Branch**: `001-casino-as-built` (carpeta documental; no se creó una rama Git)
+**Ficha documental**: `specs/001-casino-as-built/` · **Código revisado**: commit `59502dc` (entonces en `feat/poker-bots-15-names`, integrado en `dev` mediante `28b29ab`)
 
 **Created**: 2026-10-29
 
-**Status**: Draft — documentación descriptiva del estado local revisado
+**Status**: Revisada — documentación descriptiva del estado local; el estado remoto y la ratificación de la constitución siguen sin confirmación.
 
 **Input**: User description: Documentar como especificación as-built el estado actual del proyecto Casino IA, usando evidencia del repositorio y sin proponer ni implementar funcionalidades nuevas.
 
@@ -27,6 +27,7 @@ Una persona crea una cuenta, inicia sesión y accede a las secciones privadas. P
 3. **Given** una sesión activa, **When** consulta o cambia su nombre, **Then** ve su perfil propio actualizado.
 4. **Given** una sesión activa, **When** cambia su contraseña proporcionando la actual, **Then** el servidor revoca las sesiones y la persona debe iniciar sesión otra vez.
 5. **Given** una sesión activa, **When** cierra sesión, **Then** la interfaz limpia los datos privados y solicita al servidor revocar el refresh token.
+6. **Given** datos de registro o perfil fuera de los límites aceptados, **When** los envía, **Then** recibe errores de validación y no se presenta una cuenta o perfil actualizado.
 
 ### User Story 2 - Consultar y operar la billetera (Priority: P1)
 
@@ -103,7 +104,8 @@ Una persona inicia una mano de Texas Hold’em contra tres bots, ve sus cartas p
 1. **Given** una apuesta válida y saldo suficiente, **When** inicia una mano, **Then** ve sus dos cartas, tres puestos de bots con nombres elegidos de la lista disponible y una partida activa.
 2. **Given** una partida activa, **When** consulta el estado, **Then** ve fase, cartas comunitarias, bote, acciones permitidas y no ve las cartas privadas de los bots.
 3. **Given** una versión actual de la partida, **When** pasa, sube o se retira, **Then** el servidor aplica la acción, avanza la mesa y liquida cuando corresponde.
-4. **Given** una versión obsoleta o partida ajena, **When** consulta o intenta actuar, **Then** recibe un conflicto o recurso no encontrado sin aplicar una acción nueva.
+4. **Given** una versión obsoleta de la partida, **When** intenta actuar, **Then** recibe un conflicto y el servidor no aplica la acción.
+5. **Given** una partida ajena, **When** consulta su estado o intenta actuar, **Then** recibe recurso no encontrado.
 
 ### Edge Cases
 
@@ -116,6 +118,13 @@ Una persona inicia una mano de Texas Hold’em contra tres bots, ve sus cartas p
 - El usuario vuelve desde Stripe sin sesión: la ruta de retorno es privada y requiere autenticación antes de consultar el pago.
 - El servidor o la base de datos no están disponibles: el estado del despliegue y del saldo no se infiere desde los archivos de configuración.
 
+### Validaciones de cuenta y perfil observadas
+
+- Registro backend: email válido de hasta 150 caracteres, nombre de 2 a 80 caracteres y contraseña de 8 a 72 caracteres, con un máximo adicional de 72 bytes UTF-8. El formulario aplica los límites de email, nombre y longitud de contraseña; la verificación UTF-8 adicional ocurre en backend.
+- Inicio de sesión backend: email válido y contraseña no vacía de hasta 72 bytes UTF-8. El formulario no aplica un máximo de longitud local para la contraseña.
+- Perfil: el nombre se recorta y valida entre 2 y 80 caracteres en backend y frontend.
+- Cambio de contraseña: backend exige la contraseña actual y una nueva contraseña de 8 a 72 caracteres, con máximo de 72 bytes UTF-8; el formulario limita la longitud en caracteres y confirma coincidencia. Tras el éxito, el frontend cierra la sesión local.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -123,8 +132,8 @@ Una persona inicia una mano de Texas Hold’em contra tres bots, ve sus cartas p
 Los siguientes requisitos describen capacidades encontradas en el código local revisado; no expresan autorización para desarrollar comportamientos nuevos.
 
 - **FR-001**: El sistema permite registrar una cuenta con email, nombre y contraseña validados; el registro no inicia sesión automáticamente.
-- **FR-002**: El sistema permite iniciar sesión, rotar refresh tokens, cerrar sesión y cambiar la contraseña autenticadamente.
-- **FR-003**: El sistema limita el perfil al usuario autenticado y permite editar su nombre.
+- **FR-002**: El sistema permite iniciar sesión, rotar refresh tokens, cerrar sesión y cambiar autenticadamente la contraseña verificando la actual. El cambio revoca los refresh tokens de la cuenta.
+- **FR-003**: El sistema limita la consulta y edición del perfil al usuario autenticado y valida el nombre.
 - **FR-004**: El sistema muestra saldo, bono y estadísticas de billetera separados en las consultas disponibles.
 - **FR-005**: El sistema valida depósitos y retiros simulados, registra cambios de saldo con movimientos y limita las recargas simuladas en producción.
 - **FR-006**: El sistema permite crear y consultar sesiones de checkout Stripe de prueba; solo el webhook verificado o la sincronización del servidor puede confirmar y acreditar un pago válido.
@@ -180,11 +189,12 @@ Los siguientes requisitos describen capacidades encontradas en el código local 
 | Stripe test checkout | `backend/src/modules/payments/`; `backend/src/app.js`; `frontend/src/features/wallet/wallet.api.ts`, `pages/RetornoPagoPage.tsx`; `backend/tests/payments.test.js`; `frontend/src/features/wallet/pages/RetornoPagoPage.test.tsx` |
 | Juegos | `backend/src/modules/games/{plinko,blackjack,roulette,poker}/`; `frontend/src/features/games/`; `frontend/src/app/App.tsx` |
 | Tests y recorrido navegador | `backend/tests/` (unitarios, integración, HTTP); `frontend/src/**/*.test.*`; `frontend/e2e/casino.spec.ts` |
-| Reglas de proyecto y documentación | `AGENTS.md`; `ai-context/{planfrontend.md,pendientes-frontend.md,planbackend.md,pendientes-backend.md,comparacion-frontend.md}`; `docs/{agentes.md,guia-sdd-spec-kit-casino.md}`; notas de estado en `cerebro/` |
+| Reglas de proyecto y documentación | `AGENTS.md`; `ai-context/{planfrontend.md,pendientes-frontend.md,planbackend.md,pendientes-backend.md,comparacion-frontend.md}`; `docs/agentes.md`; `cerebro/arquitectura/Estado actual.md` y `cerebro/operacion/Calidad y despliegue.md` |
 
 ### Diferencias y límites documentales
 
 - `GET /api/operations/:key` aplica autenticación y consulta la operación usando el usuario autenticado, pero `backend/src/modules/operations/operation.routes.js` no aplica `validateParams` ni un DTO explícito al parámetro `key` antes de consultar Prisma. Por tanto, no se afirma que todas las entradas de API tengan validación DTO; es una excepción observable frente al principio III de la constitución y queda documentada como limitación del estado local.
+- En registro y cambio de contraseña, el frontend valida el máximo en longitud de cadena, mientras el backend también limita a 72 bytes UTF-8. El formulario de login no limita el máximo localmente, aunque el DTO backend sí limita la contraseña a 72 bytes. Una contraseña multibyte puede pasar la validación visual y ser rechazada por el servidor; sus validaciones no son completamente equivalentes (ver «Validaciones de cuenta y perfil observadas»).
 - `ai-context/planfrontend.md` y varios apartados de los planes describen una primera entrega centrada en Plinko y Blackjack y declaran pagos fuera de alcance; el código local actual también monta Ruleta y Poker y contiene checkout Stripe de prueba. Se usan los planes como contexto histórico, no como inventario actual.
 - `ai-context/pendientes-frontend.md` registra el 19 de octubre de 2026 un `/health` remoto con 503. `ai-context/comparacion-frontend.md` documenta un Firebase publicado ese día y pruebas con API simulada/interceptada. `cerebro/arquitectura/Estado actual.md` advierte que su revisión del 29 de octubre no comprobó un despliegue remoto. Esta especificación no determina el estado remoto actual.
 - `backend/tests/` y `frontend/e2e/casino.spec.ts` contienen pruebas para juegos, pagos, contratos, integración y recorridos. El E2E frontend intercepta la API y el checkout; no prueba pagos reales ni disponibilidad de Render. No se ejecutaron pruebas durante esta tarea documental.
