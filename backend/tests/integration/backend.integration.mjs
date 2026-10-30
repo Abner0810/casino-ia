@@ -80,6 +80,21 @@ test('backend persistente y contrato HTTP', async (t) => {
     assert.equal(await prisma.movimiento.count({ where: { userId: id, tipo: 'RETIRO' } }), 1);
   });
 
+  await t.test('retiro máximo de 500 se aplica por HTTP y servicio sin debitar montos superiores', async () => {
+    const id = await user(); await deposit(id, 2000);
+    for (const monto of [500.01, 501, 1000000]) {
+      assert.equal((await request(id, 'POST', '/api/transactions/withdraw', { monto }, randomUUID())).status, 400);
+      await assert.rejects(transactions.retirar(id, { monto, metodo: 'simulado' }), (error) => error.code === 'WITHDRAWAL_LIMIT');
+    }
+    assert.equal(await balance(id), 2000);
+    assert.equal(await prisma.movimiento.count({ where: { userId: id, tipo: 'RETIRO' } }), 0);
+    const accepted = await request(id, 'POST', '/api/transactions/withdraw', { monto: 500 }, randomUUID());
+    assert.equal(accepted.status, 200);
+    assert.equal(accepted.body.saldoActual, 1500);
+    assert.equal(await balance(id), 1500);
+    assert.equal(await prisma.movimiento.count({ where: { userId: id, tipo: 'RETIRO' } }), 1);
+  });
+
   await t.test('idempotencia HTTP concurrente, reconciliación y conflicto de payload', async () => {
     const id = await user(); const key = randomUUID();
     const [a, b] = await Promise.all([request(id, 'POST', '/api/transactions/deposit', { monto: 50 }, key), request(id, 'POST', '/api/transactions/deposit', { monto: 50 }, key)]);
@@ -185,6 +200,21 @@ test('backend persistente y contrato HTTP', async (t) => {
     }
     assert.equal((await prisma.movimiento.count({ where: { userId: id, juego: 'poker', tipo: 'APUESTA' } })), 1);
     assert.equal((await prisma.movimiento.count({ where: { userId: id, juego: 'poker', tipo: 'PREMIO' } })), action.body.estado === 'GANADA' ? 1 : 0);
+  });
+
+  await t.test('Blackjack anuncia y permite 10000, rechaza 10000.01 sin tocar saldo ni ledger', async () => {
+    const id = await user(); await deposit(id, 20000);
+    const access = await request(id, 'POST', '/api/users/games/blackjack/access');
+    assert.equal(access.status, 200);
+    assert.equal(access.body.mesa.apuestaMaxima, 10000);
+    const rejected = await request(id, 'POST', '/api/games/blackjack/start', { apuesta: 10000.01 }, randomUUID());
+    assert.equal(rejected.status, 400);
+    assert.equal(await balance(id), 20000);
+    assert.equal(await prisma.movimiento.count({ where: { userId: id, juego: 'blackjack' } }), 0);
+    const started = await request(id, 'POST', '/api/games/blackjack/start', { apuesta: 10000 }, randomUUID());
+    assert.equal(started.status, 201);
+    assert.equal(started.body.apuestaBase, 10000);
+    assert.equal(await prisma.movimiento.count({ where: { userId: id, juego: 'blackjack', tipo: 'APUESTA' } }), 1);
   });
 
   await t.test('Blackjack reconstruye columnas JSON, oculta dealer y comprueba ownership', async () => {

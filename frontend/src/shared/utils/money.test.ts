@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   RECARGA_MAXIMA,
   RECARGA_MINIMA,
+  RETIRO_MAXIMO,
   formatearBs,
   montoATexto,
   validarMontoRecarga,
+  validarMontoRetiro,
   validarMontoTexto,
 } from './money'
 
@@ -15,6 +17,23 @@ describe('importes compatibles con los DTO', () => {
   it.each(['0.01', '150.50', '1000000', ' 2.5 '])('acepta %j y lo convierte a número JSON', (texto) => {
     expect(validarMontoTexto(texto)).toBeNull()
     expect(Number.isFinite(montoATexto(texto))).toBe(true)
+  })
+})
+
+describe('retiros simulados', () => {
+  it('acepta hasta 500 Bs sin modificar el límite genérico de otros importes', () => {
+    expect(RETIRO_MAXIMO).toBe(500)
+    expect(validarMontoRetiro('0.01')).toBeNull()
+    expect(validarMontoRetiro('500')).toBeNull()
+    expect(validarMontoTexto('10000')).toBeNull()
+  })
+
+  it.each(['500.01', '501', '1000001'])('rechaza %j con el máximo real de retiro', (texto) => {
+    expect(validarMontoRetiro(texto)).toContain('Bs 500,00')
+  })
+
+  it.each(['0', '-1', '1.001', '1e3', 'NaN', 'Infinity', '1,50', ''])('rechaza %j', (texto) => {
+    expect(validarMontoRetiro(texto)).not.toBeNull()
   })
 })
 

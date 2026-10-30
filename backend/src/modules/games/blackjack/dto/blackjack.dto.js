@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BLACKJACK_LIMITES } from '../blackjack.config.js';
 
 export const actionDTO = z.object({ version: z.number().int().nonnegative() }).strict();
 
@@ -6,6 +7,8 @@ export const startDTO = z.object({
   apuesta: z
     .number({ invalid_type_error: 'La apuesta debe ser numérica' })
     .positive('La apuesta debe ser positiva')
+    .min(BLACKJACK_LIMITES.MIN, `La apuesta mínima es ${BLACKJACK_LIMITES.MIN}`)
+    .max(BLACKJACK_LIMITES.MAX, `La apuesta máxima es ${BLACKJACK_LIMITES.MAX}`)
     .refine((v) => /^\d+(\.\d{1,2})?$/.test(String(v)), 'La apuesta admite máximo 2 decimales'),
 });
 

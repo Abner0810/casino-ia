@@ -34,10 +34,10 @@ Este inventario resume rutas montadas en `backend/src/app.js` y sus routers/DTOs
 ## Validaciones de entrada destacadas
 
 - Registro: email válido hasta 150 caracteres, nombre entre 2 y 80, contraseña entre 8 y 72 caracteres y máximo 72 bytes UTF-8. Login: email válido y contraseña no vacía, máximo 72 bytes UTF-8. Perfil: nombre entre 2 y 80 caracteres; cambio de contraseña valida la contraseña actual y una nueva entre 8 y 72 caracteres/máximo 72 bytes UTF-8.
-- Depósito/retiro simulados: monto positivo, máximo 1.000.000 y hasta dos decimales; el método es `simulado`.
+- Depósito simulado: monto positivo hasta 1.000.000. Retiro simulado: monto positivo hasta 500 por operación, validado también en el servidor. Ambos admiten hasta dos decimales; el método es `simulado`.
 - Stripe checkout: monto entre 5 y 500 con hasta dos decimales; moneda la fija configuración de servidor y está fijada a `bob` en `env.js`. La respuesta puede ser `201` con URL o `202` con estado `CREANDO` y `Retry-After: 2`; los reintentos reutilizan la misma clave y body.
 - Plinko: monto positivo con dos decimales y riesgo válido; límites actuales: PEQUENO 1–50, MEDIANO 50–500, GRANDE 500–5000.
-- Blackjack: apuesta 10–1000; partida por UUID; acciones reciben versión entera no negativa.
+- Blackjack: apuesta inicial 10–10.000, con el mismo límite anunciado por acceso y aplicado en frontend y backend; partida por UUID; acciones reciben versión entera no negativa.
 - Ruleta: apuesta 1–1000; pleno 0–36, color rojo/negro, paridad par/impar, docena/columna 1–3.
 - Poker: apuesta 1–1000; acción `check`, `raise` o `fold` y versión entera no negativa.
 - Clave idempotente: entre 8 y 128 caracteres alfanuméricos, guion bajo o guion; es obligatoria en mutaciones monetarias y juegos, incluido checkout especializado.

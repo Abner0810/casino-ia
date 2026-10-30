@@ -48,6 +48,36 @@ it('recupera la partida activa y obedece las acciones permitidas por el servidor
   expect(gamesApi.blackjack.iniciar).not.toHaveBeenCalled()
 })
 
+it('muestra y aplica el máximo 10000 recibido del servidor con saldo suficiente', async () => {
+  vi.mocked(gamesApi.acceso).mockResolvedValue({ juego: 'blackjack', saldo: 20000, mesa: { apuestaMinima: 10, apuestaMaxima: 10000, reglas: [] } })
+  vi.mocked(gamesApi.blackjack.activa).mockResolvedValue({ partida: null })
+  vi.mocked(gamesApi.blackjack.iniciar).mockResolvedValue(partida({ apuestaBase: 10000, apuestaTotal: 10000 }))
+  montar()
+  const user = userEvent.setup()
+  const apuesta = await screen.findByRole('textbox', { name: 'Apuesta' })
+  expect(screen.getByText('Límites: 10.00 – 10,000.00')).toBeVisible()
+  await user.type(apuesta, '10000.01')
+  await user.tab()
+  expect(screen.getByText('Apuesta entre 10.00 y 10,000.00.')).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Repartir cartas' })).toBeDisabled()
+  expect(gamesApi.blackjack.iniciar).not.toHaveBeenCalled()
+  await user.clear(apuesta)
+  await user.type(apuesta, '10000')
+  await user.click(screen.getByRole('button', { name: 'Repartir cartas' }))
+  await waitFor(() => expect(gamesApi.blackjack.iniciar).toHaveBeenCalledWith(10000))
+})
+
+it('respeta un máximo menor si la API cambia el límite de la mesa', async () => {
+  vi.mocked(gamesApi.acceso).mockResolvedValue({ juego: 'blackjack', saldo: 20000, mesa: { apuestaMinima: 10, apuestaMaxima: 1000, reglas: [] } })
+  vi.mocked(gamesApi.blackjack.activa).mockResolvedValue({ partida: null })
+  montar()
+  const user = userEvent.setup()
+  await user.type(await screen.findByRole('textbox', { name: 'Apuesta' }), '1000.01')
+  expect(screen.getByText('Límites: 10.00 – 1,000.00')).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Repartir cartas' })).toBeDisabled()
+  expect(gamesApi.blackjack.iniciar).not.toHaveBeenCalled()
+})
+
 it('envía una sola acción con la versión actual y bloquea las demás hasta su respuesta', async () => {
   let resolver!: (valor: PartidaBlackjack) => void
   vi.mocked(gamesApi.blackjack.accion).mockReturnValue(new Promise((resolve) => { resolver = resolve }))

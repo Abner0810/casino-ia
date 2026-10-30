@@ -3,6 +3,7 @@
 // aquí solo se valida la entrada textual y se formatea para mostrar.
 
 export const MONTO_MAXIMO = 1_000_000
+export const RETIRO_MAXIMO = 500
 
 const RE_MONTO = /^\d+(\.\d{1,2})?$/
 
@@ -20,6 +21,14 @@ export function validarMontoTexto(texto: string): string | null {
   return null
 }
 
+/** Valida el retiro simulado: positivo, hasta 500 Bs y máximo 2 decimales. */
+export function validarMontoRetiro(texto: string): string | null {
+  if (RE_MONTO.test(texto.trim()) && montoATexto(texto) > RETIRO_MAXIMO) return `El monto máximo por retiro es ${formatearBs(RETIRO_MAXIMO)}`
+  const error = validarMontoTexto(texto)
+  if (error) return error
+  return null
+}
+
 /** Convierte la entrada textual validada a número para enviar al servidor. */
 export function montoATexto(texto: string): number {
   return Number(texto.trim())
@@ -34,8 +43,7 @@ export function formatearDinero(valor: number): string {
 }
 
 // ── Recargas con Stripe (bolivianos) ──────────────────────────────
-// El retiro simulado conserva los límites de validarMontoTexto; las
-// recargas reales de Stripe tienen su propio rango 5–500 Bs.
+// Las recargas de Stripe tienen su propio rango 5–500 Bs.
 
 export const RECARGA_MINIMA = 5
 export const RECARGA_MAXIMA = 500

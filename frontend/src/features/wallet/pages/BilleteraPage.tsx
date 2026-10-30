@@ -6,13 +6,13 @@ import { consultarOperacion } from '@/shared/api/operations'
 import { Alert, Button, Input, Modal, Skeleton } from '@/shared/ui'
 import { ApiError } from '@/shared/api/errors'
 import {
-  MONTO_MAXIMO,
+  RETIRO_MAXIMO,
   RECARGA_MAXIMA,
   RECARGA_MINIMA,
   formatearBs,
   montoATexto,
   validarMontoRecarga,
-  validarMontoTexto,
+  validarMontoRetiro,
 } from '@/shared/utils/money'
 import { formatearFechaHora } from '@/shared/utils/dates'
 import { useBalance, useCrearCheckout, useRetirar, useSaldo } from '@/features/wallet/wallet.hooks'
@@ -80,7 +80,7 @@ export function BilleteraPage() {
     evento.preventDefault()
     if (bloqueado || enviando.current) return
     limpiarAvisos()
-    const validacion = validarMontoTexto(montoRetiro)
+    const validacion = validarMontoRetiro(montoRetiro)
     if (validacion) {
       setErrorRetiro(validacion)
       return
@@ -233,7 +233,7 @@ export function BilleteraPage() {
           <form className={estilos.formulario} onSubmit={abrirRetiro} noValidate>
             <h3 className={estilos.subtituloForm}>Retirar saldo</h3>
             <Input
-              etiqueta={`Monto a retirar (máx. ${formatearBs(MONTO_MAXIMO)})`}
+              etiqueta={`Monto a retirar (máx. ${formatearBs(RETIRO_MAXIMO)})`}
               type="text"
               inputMode="decimal"
               autoComplete="off"
@@ -248,7 +248,7 @@ export function BilleteraPage() {
           </form>
 
           <p className={estilos.nota}>
-            Retiro simulado: monto positivo, hasta {formatearBs(MONTO_MAXIMO)} y con máximo dos decimales.
+            Retiro simulado: monto positivo, hasta {formatearBs(RETIRO_MAXIMO)} y con máximo dos decimales.
           </p>
         </section>
       </div>
