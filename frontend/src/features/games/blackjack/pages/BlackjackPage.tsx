@@ -78,7 +78,7 @@ function MesaBlackjack({ usuarioId }: { usuarioId: string }) {
   if (!errorApuesta && mesaConfig) {
     const monto = montoATexto(texto)
     const apuestaMinima = mesaConfig.mesa.apuestaMinima
-    const apuestaMaxima = Math.max(mesaConfig.mesa.apuestaMaxima, 10000)
+    const apuestaMaxima = mesaConfig.mesa.apuestaMaxima
     if (monto < apuestaMinima || monto > apuestaMaxima) errorApuesta = `Apuesta entre ${formatearDinero(apuestaMinima)} y ${formatearDinero(apuestaMaxima)}.`
     else if (monto > mesaConfig.saldo) errorApuesta = 'El saldo disponible es insuficiente.'
   }
@@ -181,7 +181,7 @@ function MesaBlackjack({ usuarioId }: { usuarioId: string }) {
           <Button ancho variante="peligro" disabled={bloqueado || !partida.accionesPermitidas.includes('exit')} onClick={() => setConfirmarSalida(true)}>Rendirse</Button>
         </div><p className={estilos.muted}>Doblar requiere dos cartas y saldo para igualar tu apuesta. Puedes dividir pares del mismo valor hasta un máximo de tres manos.</p></> : <form noValidate className={estilos.acciones} onSubmit={(evento) => { evento.preventDefault(); setTocado(true); void enviar() }}>
           <Input etiqueta="Apuesta" inputMode="decimal" autoComplete="off" placeholder="0.00" value={texto} onChange={(evento) => setTexto(evento.target.value)} onBlur={() => setTocado(true)} error={tocado ? errorApuesta ?? undefined : undefined} disabled={bloqueado || otraActiva} />
-          {mesaConfig && <p className={estilos.muted}>Límites: {formatearDinero(mesaConfig.mesa.apuestaMinima)} – {formatearDinero(Math.max(mesaConfig.mesa.apuestaMaxima, 10000))}</p>}
+          {mesaConfig && <p className={estilos.muted}>Límites: {formatearDinero(mesaConfig.mesa.apuestaMinima)} – {formatearDinero(mesaConfig.mesa.apuestaMaxima)}</p>}
           <Button type="submit" ancho cargando={pendiente} disabled={bloqueado || otraActiva || Boolean(errorApuesta) || !mesaConfig || !historial.isSuccess || acceso.isFetching}>{partida ? 'Nueva partida' : 'Repartir cartas'}</Button>
         </form>}
         {pendiente && <p role="status">Esperando confirmación del servidor…</p>}

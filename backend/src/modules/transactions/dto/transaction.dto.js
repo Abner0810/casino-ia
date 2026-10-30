@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RETIRO_MAXIMO } from '../transaction.config.js';
 
 const METODOS = ['simulado'];
 
@@ -15,7 +16,7 @@ export const withdrawDTO = z.object({
   monto: z
     .number({ invalid_type_error: 'El monto debe ser numérico' })
     .positive('El monto debe ser positivo')
-    .max(1_000_000, 'El monto máximo por retiro es 1,000,000')
+    .max(RETIRO_MAXIMO, `El monto máximo por retiro es ${RETIRO_MAXIMO}`)
     .refine((v) => /^\d+(\.\d{1,2})?$/.test(String(v)), 'El monto admite máximo 2 decimales'),
   metodo: z.enum(METODOS).default('simulado'),
 });

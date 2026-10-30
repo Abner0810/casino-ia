@@ -131,7 +131,7 @@ La URL base propuesta incluye `/api`; `/health` se consulta desde el origen del 
 ### 6.2 Validación, dinero y fechas
 
 - Registro: nombre de 2–80 caracteres, email válido hasta 150 y contraseña de 8–72 según DTO actual. No recortar contraseñas. Confirmación de contraseña solo en UI. Perfil permite editar únicamente nombre.
-- Recarga/retiro: monto positivo, hasta 1.000.000 y máximo dos decimales. Mantener entrada textual mientras se escribe; convertir a número finito solo al enviar, porque los DTOs actuales esperan números JSON.
+- Depósito simulado: monto positivo hasta 1.000.000. Retiro simulado: monto positivo hasta 500 por operación, limitado en formulario y backend. Ambos admiten máximo dos decimales. Mantener entrada textual mientras se escribe; convertir a número finito solo al enviar, porque los DTOs actuales esperan números JSON.
 - Evitar aritmética monetaria con floats en la UI; si se requiere, usar centavos enteros dentro de rangos seguros o una librería decimal. Los valores y liquidaciones definitivos vienen del servidor. Formatear dos decimales y no asignar una moneda hasta acordarla.
 - Mostrar bono separado: no asumir que `totalDisponible` o `total` son apostables/retirables; la lógica actual opera sobre saldo.
 - Serializar fechas en ISO con zona explícita. Para un filtro por día, incluir el fin del día elegido, validar `desde <= hasta` y mostrar la zona usada. Cambiar filtros reinicia `pagina` a 1.
@@ -165,7 +165,7 @@ La animación representa el resultado del servidor. El endpoint de acceso solo e
 
 ## 9. Blackjack
 
-1. Obtener acceso, límites y reglas; referencia local: apuesta inicial 10–1000.
+1. Obtener acceso, límites y reglas; apuesta inicial 10–10.000, validada en frontend y backend.
 2. Iniciar una partida y renderizar su respuesta. Puede terminar en la apertura por blackjack natural.
 3. Identificar la primera mano ACTIVA y mostrar Pedir, Plantarse, Dividir, Doblar y Rendirse según reglas y disponibilidad.
 4. Cada acción espera respuesta antes de habilitar otra. El servidor decide cartas, valor, cambio de mano y resultado.

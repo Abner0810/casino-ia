@@ -43,6 +43,7 @@
 - [x] Integrar wallet y balance respetando las estadísticas anidadas en `historial`.
 - [x] Recarga y retiro con `{monto, metodo: "simulado"}`, sin datos de pago reales.
 - [x] Validar importes positivos, máximo y dos decimales; bloquear doble envío.
+- [x] Limitar cada retiro a 500 en formulario y backend, con pruebas de frontera 500/500,01.
 - [x] Reconsultar saldo, estadísticas, perfil y movimientos después de mutaciones.
 - [x] Historial paginado con tipo, rango de fechas y zona horaria explícita.
 - [x] Retiro mayor al saldo muestra rechazo y no altera el saldo mostrado como confirmado.
@@ -61,6 +62,7 @@
 ### 5.2 Blackjack
 
 - [x] Acceso, límites, inicio y resolución natural en apertura.
+- [x] Apuesta inicial de Blackjack hasta 10.000; frontend toma el máximo de la API y backend aplica el mismo límite.
 - [x] Cartas visibles/ocultas, primera mano ACTIVA y apuestas por mano.
 - [x] Pedir, plantarse, split y doble con estados válidos y rechazos claros.
 - [x] Rendición confirmada con devolución del 50% y diferenciada de navegar fuera de mesa.
