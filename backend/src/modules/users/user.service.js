@@ -64,7 +64,7 @@ export async function accesoJuego(userId, juego) {
 
   if (juego === 'poker') return {
     juego, saldo: toNumber(user.wallet.saldo),
-    mesa: { apuestaMinima: POKER_LIMITES.MIN, apuestaMaxima: POKER_LIMITES.MAX, reglas: ['Texas Hold’em contra la banca', 'Dos cartas privadas y cinco comunitarias'] },
+    mesa: { apuestaMinima: POKER_LIMITES.MIN, apuestaMaxima: POKER_LIMITES.MAX, reglas: ['Texas Hold’em contra tres bots', 'Dos cartas privadas por jugador y cinco comunitarias'] },
   };
 
   return {

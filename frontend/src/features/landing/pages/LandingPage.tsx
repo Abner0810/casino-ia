@@ -69,7 +69,7 @@ export function LandingPage() {
           </article>
           <article className={estilos.tarjeta}>
             <h3 className={estilos.tarjetaTitulo}><span aria-hidden="true">♠</span> Poker</h3>
-            <p className={estilos.tarjetaTexto}>Texas Hold’em contra la banca: juega tus dos cartas con las comunitarias y decide en cada fase.</p>
+            <p className={estilos.tarjetaTexto}>Texas Hold’em contra tres bots: juega tus dos cartas con las comunitarias y decide en cada fase.</p>
           </article>
         </div>
       </section>
