@@ -14,6 +14,12 @@ export const consultar = manejar(async (req, res) => {
 });
 
 export const sincronizar = manejar(async (req, res) => {
+  res.set('Deprecation', 'true');
+  res.set('Warning', '299 - "GET /api/payments/:id/sync is deprecated; use POST /api/payments/:id/sync"');
+  res.json(await service.sincronizarPago(req.user.id, req.params.id));
+});
+
+export const sincronizarPost = manejar(async (req, res) => {
   res.json(await service.sincronizarPago(req.user.id, req.params.id));
 });
 

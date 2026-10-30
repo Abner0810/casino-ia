@@ -4109,7 +4109,7 @@
       "post": {
         "operationId": "post__api_payments_checkout",
         "summary": "Crea una sesión de Stripe Checkout (modo test, BOB)",
-        "description": "Recarga de 5 a 500 Bs. Devuelve checkoutUrl para pagar en el dominio de Stripe; no se reciben datos de tarjeta. Requiere Idempotency-Key; reutilizarla con el mismo body devuelve la misma sesión. 503 PAYMENTS_NOT_CONFIGURED si el entorno no tiene clave de Stripe. El saldo NO se acredita aquí.",
+        "description": "Recarga de 5 a 500 Bs. Devuelve checkoutUrl para pagar en el dominio de Stripe; no se reciben datos de tarjeta. Requiere Idempotency-Key; reutilizarla con el mismo body devuelve la misma sesión. 202 indica creación ambigua y devuelve PagoCheckoutCreando con Retry-After: 2. 503 PAYMENTS_NOT_CONFIGURED si el entorno no tiene clave de Stripe. El saldo NO se acredita aquí.",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -4150,6 +4150,24 @@
                   "type": "boolean"
                 },
                 "description": "true si devuelve la respuesta almacenada, sin nuevos efectos."
+              }
+            }
+          },
+          "202": {
+            "description": "Creación externa pendiente o ambigua",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "const": 2
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagoCheckoutCreando"
+                }
               }
             }
           },
@@ -4329,8 +4347,119 @@
     "/api/payments/{id}/sync": {
       "get": {
         "operationId": "get__api_payments_id_sync",
+        "summary": "Reconcilia un pago pendiente contra Stripe (deprecado)",
+        "description": "Deprecated: usar POST. Conservado durante la migración y devuelve Deprecation: true.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operación completada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pago"
+                }
+              }
+            },
+            "headers": {
+              "Deprecation": {
+                "schema": {
+                  "type": "string",
+                  "const": "true"
+                }
+              },
+              "Warning": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos o regla de negocio inválidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credenciales ausentes, vencidas o inválidas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recurso inexistente o ajeno",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicto de clave, versión o partida activa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Límite de solicitudes; respetar Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Fallo inesperado; reconciliar mutaciones antes de reenviar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post__api_payments_id_sync",
         "summary": "Reconcilia un pago pendiente contra Stripe",
-        "description": "Si seguía PENDIENTE, consulta la sesión en Stripe y, si está pagada e íntegra, acredita el saldo una sola vez (idempotente con el webhook). Útil al volver del checkout.",
+        "description": "Consulta Stripe y acredita el saldo solo si la sesión está pagada e íntegra. La transición y Movimiento.pagoId hacen idempotente la operación; requiere limiter de pagos.",
         "parameters": [
           {
             "name": "id",
@@ -5767,6 +5896,17 @@
             "type": "integer",
             "minimum": 0
           },
+          "cantidadJugadores": {
+            "const": 4
+          },
+          "nombresBots": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            }
+          },
           "reglas": {
             "type": "array",
             "items": {
@@ -5778,7 +5918,65 @@
           "apuestaMinima",
           "apuestaMaxima",
           "maxSubidas",
+          "cantidadJugadores",
+          "nombresBots",
           "reglas"
+        ]
+      },
+      "PokerPlayer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "HUMANO",
+              "BOT"
+            ]
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "ACTIVO",
+              "RETIRADO",
+              "GANADOR",
+              "PERDEDOR"
+            ]
+          },
+          "cartas": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "apuesta": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
+          },
+          "mano": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nombre",
+          "tipo",
+          "estado",
+          "cartas",
+          "apuesta",
+          "mano"
         ]
       },
       "PokerGame": {
@@ -5793,7 +5991,14 @@
             "minimum": 0
           },
           "estado": {
-            "$ref": "#/components/schemas/GameState"
+            "type": "string",
+            "enum": [
+              "ACTIVA",
+              "GANADA",
+              "PERDIDA",
+              "EMPATE",
+              "RENDIDA"
+            ]
           },
           "fase": {
             "type": "string",
@@ -5815,6 +6020,12 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          },
+          "jugadores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PokerPlayer"
             }
           },
           "comunitarias": {
@@ -5868,6 +6079,7 @@
           "fase",
           "cartasJugador",
           "cartasBanca",
+          "jugadores",
           "comunitarias",
           "apuestaBase",
           "apuestaTotal",
@@ -5880,7 +6092,7 @@
       "PokerRound": {
         "type": "object",
         "properties": {
-          "id": {
+          "partidaId": {
             "type": "string",
             "format": "uuid"
           },
@@ -5900,33 +6112,54 @@
             "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
           },
           "estado": {
-            "$ref": "#/components/schemas/GameState"
+            "type": "string",
+            "enum": [
+              "ACTIVA",
+              "GANADA",
+              "PERDIDA",
+              "EMPATE",
+              "RENDIDA"
+            ]
           },
           "fase": {
             "type": "string"
-          },
-          "manoJugador": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "manoBanca": {
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "ganancia": {
             "type": "number",
             "minimum": 0,
             "description": "Créditos simulados, dos decimales. Saldo máximo 9999999999.99; agregados históricos pueden superarlo. No es dinero real."
           },
-          "creadaEn": {
+          "resultado": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "ganador": {
+                "type": "string"
+              },
+              "motivo": {
+                "type": "string",
+                "enum": [
+                  "SHOWDOWN",
+                  "RETIRO",
+                  "BOT_FOLD",
+                  "MIGRACION_MESA_BOTS"
+                ]
+              },
+              "ganadores": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "createdAt": {
             "type": "string",
             "format": "date-time"
           },
-          "cerradaEn": {
+          "finishedAt": {
             "type": [
               "string",
               "null"
@@ -5935,51 +6168,122 @@
           }
         },
         "required": [
-          "id",
+          "partidaId",
           "apuesta",
           "apuestaTotal",
           "bote",
           "estado",
           "fase",
-          "manoJugador",
-          "manoBanca",
           "ganancia",
-          "creadaEn",
-          "cerradaEn"
+          "resultado",
+          "createdAt",
+          "finishedAt"
         ]
       },
       "Operation": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "operation": {
-            "type": "string"
-          },
-          "status": {
-            "type": "integer"
-          },
-          "response": {
+        "anyOf": [
+          {
             "type": "object",
-            "description": "Respuesta JSON original de la mutación, incluido operationId."
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "operation": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer",
+                "minimum": 200,
+                "maximum": 299
+              },
+              "response": {
+                "type": "object"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "estado": {
+                "const": "CONFIRMADA"
+              }
+            },
+            "required": [
+              "id",
+              "operation",
+              "status",
+              "response",
+              "createdAt",
+              "estado"
+            ]
           },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "operation": {
+                "type": "string"
+              },
+              "status": {
+                "const": 202
+              },
+              "response": {
+                "type": "object"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "estado": {
+                "const": "PENDIENTE"
+              }
+            },
+            "required": [
+              "id",
+              "operation",
+              "status",
+              "response",
+              "createdAt",
+              "estado"
+            ]
           },
-          "estado": {
-            "const": "CONFIRMADA"
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "operation": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer",
+                "minimum": 400
+              },
+              "response": {
+                "type": "object"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "estado": {
+                "const": "FALLIDA"
+              }
+            },
+            "required": [
+              "id",
+              "operation",
+              "status",
+              "response",
+              "createdAt",
+              "estado"
+            ]
           }
-        },
-        "required": [
-          "id",
-          "operation",
-          "status",
-          "response",
-          "createdAt",
-          "estado"
         ]
       },
       "PagoCheckoutInput": {
@@ -6033,6 +6337,27 @@
           "operationId": "0f7e1a52-6a52-4f0e-9f0e-6a524f0e9f0e"
         }
       },
+      "PagoCheckoutCreando": {
+        "type": "object",
+        "properties": {
+          "pagoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estado": {
+            "const": "CREANDO"
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "pagoId",
+          "estado",
+          "operationId"
+        ]
+      },
       "Pago": {
         "type": "object",
         "properties": {
@@ -6043,6 +6368,7 @@
           "estado": {
             "type": "string",
             "enum": [
+              "CREANDO",
               "PENDIENTE",
               "PAGADO",
               "FALLIDO",

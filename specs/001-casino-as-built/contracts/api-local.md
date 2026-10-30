@@ -21,9 +21,10 @@ Este inventario resume rutas montadas en `backend/src/app.js` y sus routers/DTOs
 | Transacciones | `GET /api/transactions/history` | Bearer; pagina y filtra por tipo/fechas. |
 | Pagos | `POST /api/payments/checkout` | Bearer + DTO + limitador propio + clave idempotente; crea sesión Stripe de prueba. |
 | Pagos | `GET /api/payments/:id` | Bearer; consulta pago propio; recurso ajeno/inexistente se oculta con 404. |
-| Pagos | `GET /api/payments/:id/sync` | Bearer; sincroniza estado consultando la sesión al proveedor. |
+| Pagos | `POST /api/payments/:id/sync` | Bearer + limitador de pagos; sincroniza estado consultando la sesión al proveedor. La transición es idempotente. |
+| Pagos | `GET /api/payments/:id/sync` (deprecado) | Bearer; compatibilidad temporal. Devuelve `Deprecation: true` y `Warning`; retirar en el siguiente release autorizado. |
 | Pagos | `POST /api/payments/webhook` | Webhook sin Bearer; cuerpo raw, firma Stripe verificada antes de procesar. Montado antes del parser JSON. |
-| Operaciones | `GET /api/operations/:key` | Bearer; consulta resultado confirmado por usuario y clave. El router no aplica `validateParams` ni DTO explícito al parámetro `key`. |
+| Operaciones | `GET /api/operations/:key` | Bearer; devuelve unión `PENDIENTE`, `CONFIRMADA` o `FALLIDA` por usuario y clave. El router no aplica `validateParams` ni DTO explícito al parámetro `key`. |
 | Plinko | `GET /api/games/plinko/config`, `POST /bet`, `GET /rounds` | Bearer; apuesta con clave idempotente, config y rondas propias. |
 | Blackjack | `POST /api/games/blackjack/start`; `GET /rounds`, `/active`, `/:id`; `POST /:id/{hit,stand,split,double,exit}` | Bearer; apuesta/acciones con DTO, acciones versionadas, idempotencia y ownership. |
 | Ruleta | `GET /api/games/roulette/config`, `POST /bet`, `GET /rounds` | Bearer; apuesta con clave idempotente, configuración y rondas propias. |
@@ -34,12 +35,12 @@ Este inventario resume rutas montadas en `backend/src/app.js` y sus routers/DTOs
 
 - Registro: email válido hasta 150 caracteres, nombre entre 2 y 80, contraseña entre 8 y 72 caracteres y máximo 72 bytes UTF-8. Login: email válido y contraseña no vacía, máximo 72 bytes UTF-8. Perfil: nombre entre 2 y 80 caracteres; cambio de contraseña valida la contraseña actual y una nueva entre 8 y 72 caracteres/máximo 72 bytes UTF-8.
 - Depósito/retiro simulados: monto positivo, máximo 1.000.000 y hasta dos decimales; el método es `simulado`.
-- Stripe checkout: monto entre 5 y 500 con hasta dos decimales; moneda la fija configuración de servidor y está fijada a `bob` en `env.js`.
+- Stripe checkout: monto entre 5 y 500 con hasta dos decimales; moneda la fija configuración de servidor y está fijada a `bob` en `env.js`. La respuesta puede ser `201` con URL o `202` con estado `CREANDO` y `Retry-After: 2`; los reintentos reutilizan la misma clave y body.
 - Plinko: monto positivo con dos decimales y riesgo válido; límites actuales: PEQUENO 1–50, MEDIANO 50–500, GRANDE 500–5000.
 - Blackjack: apuesta 10–1000; partida por UUID; acciones reciben versión entera no negativa.
 - Ruleta: apuesta 1–1000; pleno 0–36, color rojo/negro, paridad par/impar, docena/columna 1–3.
 - Poker: apuesta 1–1000; acción `check`, `raise` o `fold` y versión entera no negativa.
-- Clave idempotente: entre 8 y 128 caracteres alfanuméricos, guion bajo o guion; solo aplica a rutas envueltas por `operationHandler`.
+- Clave idempotente: entre 8 y 128 caracteres alfanuméricos, guion bajo o guion; es obligatoria en mutaciones monetarias y juegos, incluido checkout especializado.
 
 Los límites y reglas se leen en los DTOs/configuración actuales. No todos los campos y formatos de respuesta se repiten aquí para evitar divergir del contrato versionado.
 

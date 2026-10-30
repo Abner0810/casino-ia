@@ -81,6 +81,8 @@ export function calcularRepartoBote(aporteJugador, aportesBots, ganadores) {
 
 // Cada calle quema una carta, como en una mesa de Hold'em.
 export function avanzarMesa(fase, baraja, comunitarias) {
+  // El river cierra las apuestas sin quemar ni repartir más cartas.
+  if (fase === 'RIVER') return { fase: 'SHOWDOWN', baraja: [...baraja], comunitarias: [...comunitarias] };
   const siguiente = { PREFLOP: ['FLOP', 3], FLOP: ['TURN', 1], TURN: ['RIVER', 1] }[fase];
   if (!siguiente) throw new Error('Fase inválida para avanzar');
   const disponibles = [...baraja];

@@ -11,7 +11,12 @@ router.get('/:key', auth, async (req, res, next) => {
       select: { id: true, operation: true, status: true, response: true, createdAt: true },
     });
     if (!operation) throw new ApiError(404, 'Operación no encontrada');
-    res.json({ ...operation, estado: 'CONFIRMADA' });
+    const estado = operation.status === 202
+      ? 'PENDIENTE'
+      : operation.status >= 200 && operation.status < 300
+        ? 'CONFIRMADA'
+        : 'FALLIDA';
+    res.json({ ...operation, estado });
   } catch (err) { next(err); }
 });
 export default router;

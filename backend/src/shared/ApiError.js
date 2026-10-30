@@ -7,5 +7,7 @@ export class ApiError extends Error {
     this.statusCode = statusCode;
     this.details = details;
     this.code = code;
+    this.headers = null;
+    this.bodyExtra = null;
   }
 }

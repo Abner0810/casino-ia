@@ -13,12 +13,12 @@ export const buscarPorSesion = (tx, stripeSessionId) =>
   tx.pago.findUnique({ where: { stripeSessionId } });
 
 /**
- * PENDIENTE -> PAGADO condicional: si otro proceso (webhook o /sync)
+ * CREANDO/PENDIENTE -> PAGADO condicional: si otro proceso (webhook o /sync)
  * ya lo cambió, count === 0 y no se vuelve a acreditar.
  */
 export const marcarPagado = (tx, id, stripePaymentIntentId) =>
   tx.pago.updateMany({
-    where: { id, estado: 'PENDIENTE' },
+    where: { id, estado: { in: ['CREANDO', 'PENDIENTE'] } },
     data: { estado: 'PAGADO', pagadoEn: new Date(), stripePaymentIntentId },
   });
 
